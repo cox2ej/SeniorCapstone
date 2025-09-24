@@ -3,3 +3,27 @@ The Peer Feedback App is designed to enhance student’s work and collaboration 
 facilitating structured, anonymous, and constructive peer feedback. The app supports students
 by allowing them to provide and receive feedback on various performance criteria, encouraging
 accountability.
+
+## Problem Statement
+Students often hesitate to seek help due to stigma, cost, or accessibility barriers. Peer feedback provides a low-cost, supportive way to encourage improvement, but traditional methods lack structure and anonymity. This app addresses those challenges.
+
+## Solution
+Our solution provides:
+- **Anonymous peer evaluations** on predefined or custom criteria.
+- **Self-assessment tools** with growth tracking.
+- **Feedback dashboards** for easy review.
+- **Notifications & reminders** to ensure timely participation.
+- **Data privacy & security** with FERPA/GDPR compliance.
+
+## Objectives
+- Enable anonymous peer evaluations.
+- Support self-assessment and reflection.
+- Ensure a supportive and respectful environment.
+- Prioritize data privacy and simple accessibility.
+
+## Team Members
+- **Ethan Cox** – Project Management, Developer  
+- **Advait Parab** – Project Planning, Timelines & Deliverables  
+- **Melanie Peck** – Frontend Development, UI/UX Design  
+- **Nathaniel Wisher** – Testing, Debugging, Security  
+
