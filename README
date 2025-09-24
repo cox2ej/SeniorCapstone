@@ -27,3 +27,16 @@ Our solution provides:
 - **Melanie Peck** – Frontend Development, UI/UX Design  
 - **Nathaniel Wisher** – Testing, Debugging, Security  
 
+## Branch Naming Guidelines
+All branches should follow the naming pattern:
+<type>/<issue-number>-<short-description>
+
+Where '<type> is one of:
+- feature
+- bugfix
+- task
+- hotfix
+
+Example:
+- 'feature/123-login'
+- 'bugfix/23-headerfix'
