@@ -1,0 +1,1 @@
+Explanation of frontend structure to be edited when implemented

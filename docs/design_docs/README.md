@@ -1,0 +1,1 @@
+Directory for design documents such as UI wireframes/mockups, example workflows, etc.
