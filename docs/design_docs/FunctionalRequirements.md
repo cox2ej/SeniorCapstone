@@ -48,9 +48,9 @@ The app emphasizes anonymity, usability, and compliance with FERPA, GDPR, and re
 
     FR-2.2: The system shall allow feedback to include:
 
-    Numeric ratings (e.g., 1–5 scale).
+        Numeric ratings (e.g., 1–5 scale).
 
-Written comments.
+        Written comments.
 
     FR-2.3: The system shall anonymize submissions so the receiver cannot identify the sender.
 
