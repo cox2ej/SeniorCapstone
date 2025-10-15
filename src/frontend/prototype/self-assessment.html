@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Self-Assessment</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site-header"><a href="index.html" class="brand">Peer Feedback App</a><nav><a href="student-dashboard.html">Dashboard</a></nav></header>
+<main class="container">
+  <h1>Self-Assessment</h1>
+  <form action="student-dashboard.html" method="get">
+    <label>Self Rating (1-5)</label>
+    <input type="number" min="1" max="5" step="1" required>
+    <label>Reflection</label>
+    <textarea rows="5" placeholder="What went well? What can improve?"></textarea>
+    <div class="actions">
+      <button class="primary" type="submit">Save</button>
+    </div>
+  </form>
+</main>
+<footer class="site-footer"><p><small class="muted">Prototype only.</small></p></footer>
+</body>
+</html>

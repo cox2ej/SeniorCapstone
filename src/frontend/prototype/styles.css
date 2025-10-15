@@ -1,0 +1,19 @@
+:root{--bg:#f7f7f8;--fg:#111;--muted:#555;--primary:#2d6cdf;--border:#e5e7eb}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--fg);background:var(--bg);line-height:1.5}
+.site-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0}
+.brand{font-weight:600;color:var(--fg);text-decoration:none}
+nav a{margin-left:12px;color:var(--primary);text-decoration:none}
+nav a:hover{text-decoration:underline}
+.container{max-width:900px;padding:24px 16px;margin:0 auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px}
+.card a{color:var(--primary);text-decoration:none;font-weight:500}
+button,input,select,textarea{font:inherit}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:#fff}
+label{display:block;margin:12px 0 6px;font-weight:600}
+.actions{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+button{padding:8px 12px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer}
+button.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.site-footer{border-top:1px solid var(--border);padding:16px;text-align:center;color:var(--muted);background:#fff}
+small.muted{color:var(--muted)}
