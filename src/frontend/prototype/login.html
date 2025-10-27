@@ -9,19 +9,45 @@
  <div class="auth-shell">
    <section class="auth-card" aria-labelledby="login-title">
      <h1 id="login-title">Login</h1>
-    <p>Prototype login. This will take you into the app.</p>
-    <form action="student-dashboard.html" method="get">
-      <label for="username">Username</label>
-      <input id="username" name="username" type="text" autocomplete="username" required>
+     <p>Prototype login. This will take you into the app.</p>
+    <form action="student-dashboard.html" method="get" novalidate>
+      <label for="username">Email or Username</label>
+      <input id="username" name="username" type="text" autocomplete="username" required autofocus>
       <label for="password">Password</label>
-      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <div class="password-row">
+        <input id="password" name="password" type="password" autocomplete="current-password" required aria-describedby="passwordHelp">
+        <button type="button" class="btn" id="togglePassword" aria-pressed="false" aria-controls="password">Show</button>
+      </div>
+      <small id="passwordHelp" class="sr-only">Password field. Use the button to show or hide the password.</small>
       <div class="actions">
-        <button class="primary" type="submit" aria-label="Continue to app (mock login)">Continue</button>
-        <a href="index.html" aria-label="Return to home">Home</a>
+        <button class="primary" type="submit" aria-label="Sign in (mock)">Sign in</button>
+        <a href="index.html" class="btn" aria-label="Return to home">Home</a>
+        <a href="student-dashboard.html" class="btn" aria-label="Sign in with SSO (mock)">Use SSO (mock)</a>
+      </div>
+      <div class="actions">
+        <a href="about-help.html#forgot-password">Forgot password?</a>
       </div>
     </form>
+     <p><small class="muted">By continuing, you agree to our <a href="terms-privacy.html">Terms & Privacy</a>.</small></p>
      <p><small class="muted">No authentication is performed in this prototype.</small></p>
+     <div id="form-messages" class="sr-only" aria-live="polite"></div>
    </section>
  </div>
+  <script>
+    const passwordInput = document.getElementById('password');
+    const togglePasswordButton = document.getElementById('togglePassword');
+
+    togglePasswordButton.addEventListener('click', () => {
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        togglePasswordButton.textContent = 'Hide';
+        togglePasswordButton.setAttribute('aria-pressed', 'true');
+      } else {
+        passwordInput.type = 'password';
+        togglePasswordButton.textContent = 'Show';
+        togglePasswordButton.setAttribute('aria-pressed', 'false');
+      }
+    });
+  </script>
   </body>
   </html>
