@@ -1,20 +1,37 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Login</title>
-<link rel="stylesheet" href="styles.css">
-</head>
-<body>
-<header class="site-header"><a href="index.html" class="brand">Peer Feedback App</a><nav><a href="index.html">Home</a></nav></header>
-<main class="container">
-  <h1>Login</h1>
-  <p>Sign in using a provider (prototype only).</p>
-  <div class="actions">
-    <a href="student-dashboard.html"><button class="primary">Login as Student</button></a>
-    <a href="instructor-dashboard.html"><button>Login as Instructor</button></a>
-  </div>
-</main>
-<footer class="site-footer"><p><small class="muted">No authentication is performed in this prototype.</small></p></footer>
-</body>
-</html>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Login</title>
+  <link rel="stylesheet" href="styles.css">
+ </head>
+ <body class="theme-teal">
+ <div class="layout">
+   <aside class="sidebar" aria-label="Sidebar">
+     <a href="index.html" class="brand-large">Peer Feedback App</a>
+     <nav class="side-nav" aria-label="Primary">
+       <a href="index.html" class="active">Home</a>
+       <a href="about-help.html">About / Help</a>
+       <a href="accessibility.html">Accessibility</a>
+       <a href="terms-privacy.html">Terms & Privacy</a>
+     </nav>
+   </aside>
+   <main class="main" id="main-content">
+     <h1>Login</h1>
+     <p>Choose a sign-in option (prototype only).</p>
+     <div class="tiles">
+       <a class="tile primary" href="student-dashboard.html" aria-label="Login as Student (mock)">
+         <div class="tile-title">Login as Student</div>
+         <div class="tile-subtitle">Mock flow to student dashboard</div>
+       </a>
+       <a class="tile" href="instructor-dashboard.html" aria-label="Login as Instructor (mock)">
+         <div class="tile-title">Login as Instructor</div>
+         <div class="tile-subtitle">Mock flow to instructor dashboard</div>
+       </a>
+     </div>
+     <p><small class="muted">No authentication is performed in this prototype.</small></p>
+   </main>
+ </div>
+ <footer class="site-footer"><p><small class="muted">Prototype only.</small></p></footer>
+  </body>
+  </html>
