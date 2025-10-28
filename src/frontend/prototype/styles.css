@@ -285,6 +285,21 @@ small.muted {
   font-size: .9rem;
 }
 
+.tiles.featured {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.tile-lg {
+  min-height: 220px;
+}
+
+.tile-content {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
 .theme-teal {
   --primary: #2E6A67;
   --accent: #9EB08B;
