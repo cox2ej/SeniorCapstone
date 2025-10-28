@@ -5,21 +5,95 @@
 <title>Registration</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header class="site-header"><a href="index.html" class="brand">Peer Feedback App</a><nav><a href="login.html">Login</a></nav></header>
-<main class="container">
-  <h1>Registration (Optional)</h1>
-  <form action="login.html" method="get">
-    <label>Email</label>
-    <input type="email" required>
-    <label>Password</label>
-    <input type="password" required>
-    <div class="actions">
-      <button class="primary" type="submit">Create Account</button>
-      <a href="login.html"><button type="button">Cancel</button></a>
-    </div>
-  </form>
-</main>
-<footer class="site-footer"><p><small class="muted">Prototype only.</small></p></footer>
+<body class="theme-teal">
+<div class="auth-shell">
+  <section class="auth-card" aria-labelledby="reg-title">
+    <h1 id="reg-title">Create your account</h1>
+    <form action="login.html" method="get" novalidate>
+      <label for="fullName">Full name</label>
+      <input id="fullName" name="name" type="text" autocomplete="name" required>
+
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" required>
+
+      <label for="password">Password</label>
+      <div class="password-row">
+        <input id="password" name="password" type="password" autocomplete="new-password" required aria-describedby="passwordHelp">
+        <button type="button" class="btn" id="toggleRegPassword" aria-pressed="false" aria-controls="password">Show</button>
+      </div>
+      <small id="passwordHelp" class="sr-only">Password field. Use the button to show or hide the password.</small>
+
+      <label for="confirmPassword">Confirm password</label>
+      <div class="password-row">
+        <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required aria-describedby="confirmHelp matchError">
+        <button type="button" class="btn" id="toggleRegConfirm" aria-pressed="false" aria-controls="confirmPassword">Show</button>
+      </div>
+      <small id="confirmHelp" class="sr-only">Confirm password field. Use the button to show or hide the password.</small>
+      <p id="matchError" class="help-error" hidden>Passwords do not match.</p>
+
+      <div class="actions">
+        <button id="createAccountBtn" class="primary" type="submit" aria-label="Create account (mock)" disabled>Create account</button>
+        <a href="login.html" class="btn" aria-label="Already have an account? Log in">Already have an account?</a>
+        <a href="index.html" class="btn" aria-label="Return to Home">Home</a>
+      </div>
+    </form>
+    <p><small class="muted">By creating an account, you agree to our <a href="terms-privacy.html">Terms & Privacy</a>.</small></p>
+    <p><small class="muted">Prototype only. No actual account is created.</small></p>
+    <div id="reg-messages" class="sr-only" aria-live="polite"></div>
+  </section>
+</div>
+<script>
+  const regPw = document.getElementById('password');
+  const regPwBtn = document.getElementById('toggleRegPassword');
+  const regPw2 = document.getElementById('confirmPassword');
+  const regPw2Btn = document.getElementById('toggleRegConfirm');
+  const form = document.querySelector('form');
+  const matchError = document.getElementById('matchError');
+  const regMessages = document.getElementById('reg-messages');
+  const submitBtn = document.getElementById('createAccountBtn');
+
+  function toggleField(field, btn){
+    if(field.type === 'password'){
+      field.type = 'text';
+      btn.textContent = 'Hide';
+      btn.setAttribute('aria-pressed','true');
+    } else {
+      field.type = 'password';
+      btn.textContent = 'Show';
+      btn.setAttribute('aria-pressed','false');
+    }
+  }
+  regPwBtn.addEventListener('click', () => toggleField(regPw, regPwBtn));
+  regPw2Btn.addEventListener('click', () => toggleField(regPw2, regPw2Btn));
+
+  function checkPasswordsMatch(){
+    const bothFilled = regPw.value.length > 0 && regPw2.value.length > 0;
+    const match = regPw.value === regPw2.value;
+    if(!match && regPw2.value.length > 0){
+      matchError.hidden = false;
+      regPw2.classList.add('input-error');
+      regPw2.setAttribute('aria-invalid','true');
+      if(regMessages) regMessages.textContent = 'Passwords do not match.';
+    } else {
+      matchError.hidden = true;
+      regPw2.classList.remove('input-error');
+      regPw2.removeAttribute('aria-invalid');
+      if(regMessages) regMessages.textContent = '';
+    }
+    if(submitBtn) submitBtn.disabled = !(bothFilled && match);
+    return match;
+  }
+
+  regPw.addEventListener('input', checkPasswordsMatch);
+  regPw2.addEventListener('input', checkPasswordsMatch);
+  form.addEventListener('submit', (e) => {
+    if(!checkPasswordsMatch()){
+      e.preventDefault();
+      regPw2.focus();
+    }
+  });
+  // initialize disabled state on load
+  checkPasswordsMatch();
+</script>
 </body>
 </html>

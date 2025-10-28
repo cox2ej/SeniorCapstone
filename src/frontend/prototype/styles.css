@@ -115,6 +115,21 @@ label {
   border: 0;
 }
 
+.help-error {
+  color: #b91c1c;
+  font-size: .9rem;
+  margin-top: 4px;
+}
+
+.input-error {
+  border-color: #dc2626 !important;
+}
+
+.input-error:focus-visible {
+  outline-color: #dc2626;
+  border-color: #dc2626;
+}
+
 .actions {
   margin-top: 16px;
   display: flex;
@@ -134,6 +149,13 @@ button.primary {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
+}
+
+button:disabled,
+.btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  filter: saturate(80%);
 }
 
 a.btn,
