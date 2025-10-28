@@ -26,8 +26,8 @@
     <h1>Student Dashboard</h1>
     <p>Quick actions and recent items.</p>
     <div class="tiles featured">
-      <a class="tile primary tile-lg" href="give-feedback.html" aria-label="Give Feedback">
-        <div class="tile-title">Give Feedback</div>
+      <a class="tile primary tile-lg" href="give-feedback.html" aria-labelledby="tile-give-feedback">
+        <h2 id="tile-give-feedback" class="tile-title">Give Feedback</h2>
         <div class="tile-subtitle">Start a new feedback submission</div>
         <div class="tile-content">
           <ul>
@@ -36,8 +36,8 @@
           </ul>
         </div>
       </a>
-      <a class="tile tile-lg" href="my-feedback.html" aria-label="View My Feedback">
-        <div class="tile-title">My Feedback</div>
+      <a class="tile tile-lg" href="my-feedback.html" aria-labelledby="tile-my-feedback">
+        <h2 id="tile-my-feedback" class="tile-title">My Feedback</h2>
         <div class="tile-subtitle">See feedback you've received</div>
         <div class="tile-content">
           <ul>
@@ -46,8 +46,8 @@
           </ul>
         </div>
       </a>
-      <a class="tile tile-lg" href="self-assessment.html" aria-label="Self-Assessment">
-        <div class="tile-title">Self-Assessment</div>
+      <a class="tile tile-lg" href="self-assessment.html" aria-labelledby="tile-self-assessment">
+        <h2 id="tile-self-assessment" class="tile-title">Self-Assessment</h2>
         <div class="tile-subtitle">Reflect on your performance</div>
         <div class="tile-content">
           <ul>
@@ -55,8 +55,8 @@
           </ul>
         </div>
       </a>
-      <a class="tile tile-lg" href="feedback-history.html" aria-label="Feedback History">
-        <div class="tile-title">Feedback History</div>
+      <a class="tile tile-lg" href="feedback-history.html" aria-labelledby="tile-feedback-history">
+        <h2 id="tile-feedback-history" class="tile-title">Feedback History</h2>
         <div class="tile-subtitle">Review past submissions</div>
         <div class="tile-content">
           <ul>
@@ -65,6 +65,13 @@
         </div>
       </a>
     </div>
+    <section class="due-soon" aria-labelledby="due-heading">
+      <h2 id="due-heading">Due soon</h2>
+      <ul class="due-list">
+        <li><a href="give-feedback.html">Peer Review 2</a> — due in 2 days</li>
+        <li><a href="self-assessment.html">Self-Assessment</a> — due next week</li>
+      </ul>
+    </section>
   </main>
 </div>
 </body>

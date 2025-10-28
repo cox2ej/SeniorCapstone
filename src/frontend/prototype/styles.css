@@ -266,9 +266,15 @@ small.muted {
 }
 
 .tile:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
   border-color: #d1d5db;
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .10);
 }
 
 .tile.primary {
@@ -298,6 +304,21 @@ small.muted {
   margin-top: 8px;
   color: var(--muted);
   font-size: .9rem;
+}
+
+.due-soon {
+  margin-top: 28px;
+}
+
+.due-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.due-list a {
+  color: var(--primary);
+  text-decoration: none;
 }
 
 .theme-teal {
