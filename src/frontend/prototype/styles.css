@@ -286,12 +286,12 @@ small.muted {
 }
 
 .tiles.featured {
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
 }
 
 .tile-lg {
-  min-height: 220px;
+  min-height: clamp(340px, 42vh, 560px);
 }
 
 .tile-content {
