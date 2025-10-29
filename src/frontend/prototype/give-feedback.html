@@ -5,28 +5,81 @@
 <title>Give Feedback</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header class="site-header"><a href="index.html" class="brand">Peer Feedback App</a><nav><a href="feedback-guidelines.html">Guidelines</a> <a href="student-dashboard.html">Dashboard</a></nav></header>
-<main class="container">
-  <h1>Give Feedback</h1>
-  <form action="feedback-confirmation.html" method="get">
-    <label>Peer</label>
-    <select required>
-      <option value="" disabled selected>Select a peer</option>
-      <option>Peer A</option>
-      <option>Peer B</option>
-      <option>Peer C</option>
-    </select>
-    <label>Rating (1-5)</label>
-    <input type="number" min="1" max="5" step="1" required>
-    <label>Comments</label>
-    <textarea rows="5" placeholder="Write constructive feedback"></textarea>
-    <div class="actions">
-      <a href="feedback-guidelines.html"><button type="button">View Guidelines</button></a>
-      <button class="primary" type="submit">Submit Feedback</button>
-    </div>
-  </form>
-</main>
-<footer class="site-footer"><p><small class="muted">Data is not saved in this prototype.</small></p></footer>
+<body class="theme-teal">
+<div class="layout">
+  <aside class="sidebar" aria-label="Sidebar">
+    <a href="index.html" class="brand-large">Peer Feedback App</a>
+    <nav class="side-nav" aria-label="Primary">
+      <a href="student-dashboard.html">Dashboard</a>
+      <a href="give-feedback.html" class="active">Give Feedback</a>
+      <a href="my-feedback.html">My Feedback</a>
+      <a href="self-assessment.html">Self-Assessment</a>
+      <a href="feedback-history.html">Feedback History</a>
+      <a href="notifications.html">Notifications</a>
+      <a href="profile.html">Profile</a>
+      <a href="privacy-settings.html">Privacy</a>
+      <a href="about-help.html">Help</a>
+      <a href="logout.html">Logout</a>
+    </nav>
+  </aside>
+  <main class="main" id="main-content">
+    <h1 id="give-feedback-title">Give Feedback</h1>
+    <section class="tile" aria-labelledby="rubric-heading">
+      <h2 id="rubric-heading" class="tile-title">Rubric & Attachments</h2>
+      <div class="tile-content">
+        <h3>Rubric (placeholder)</h3>
+        <ul>
+          <li><strong>Clarity & Organization</strong>: 1–5 — Is the feedback easy to follow and well structured?</li>
+          <li><strong>Constructiveness</strong>: 1–5 — Does it include actionable suggestions?</li>
+          <li><strong>Specificity</strong>: 1–5 — Does it reference concrete examples?</li>
+          <li><strong>Professionalism</strong>: 1–5 — Is the tone respectful and objective?</li>
+        </ul>
+        <h3>Attachments (placeholder)</h3>
+        <ul>
+          <li><a href="#" aria-label="Download assignment brief (mock)">Assignment brief (PDF)</a></li>
+          <li><a href="#" aria-label="Download rubric (mock)">Rubric (PDF)</a></li>
+          <li><a href="#" aria-label="Download starter files (mock)">Starter files (ZIP)</a></li>
+        </ul>
+      </div>
+    </section>
+    <form action="feedback-confirmation.html" method="get" novalidate aria-labelledby="give-feedback-title">
+      <label for="peer">Peer</label>
+      <select id="peer" name="peer" required>
+        <option value="" disabled selected>Select a peer</option>
+        <option>Peer A</option>
+        <option>Peer B</option>
+        <option>Peer C</option>
+      </select>
+
+      <label for="rating">Rating (1-5)</label>
+      <input id="rating" name="rating" type="number" min="1" max="5" step="1" required aria-describedby="ratingHelp">
+      <small id="ratingHelp" class="sr-only">Enter a whole number from 1 to 5.</small>
+
+      <label for="comments">Comments</label>
+      <textarea id="comments" name="comments" rows="6" placeholder="Write constructive, specific, and actionable feedback" aria-describedby="commentsHelp"></textarea>
+      <small id="commentsHelp" class="sr-only">Provide constructive, specific, and actionable feedback.</small>
+
+      <div class="actions">
+        <button class="primary" type="submit" aria-label="Submit feedback (mock)">Submit</button>
+        <button type="button" class="btn" id="saveDraftBtn" aria-label="Save draft (mock)">Save draft</button>
+        <a href="feedback-guidelines.html" class="btn" aria-label="View feedback guidelines">Guidelines</a>
+        <a href="student-dashboard.html" class="btn" aria-label="Cancel and return to dashboard">Cancel</a>
+      </div>
+    </form>
+    <div id="gf-messages" class="sr-only" aria-live="polite"></div>
+  </main>
+</div>
+<script>
+  const saveDraftBtn = document.getElementById('saveDraftBtn');
+  const gfMessages = document.getElementById('gf-messages');
+  if (saveDraftBtn) {
+    saveDraftBtn.addEventListener('click', () => {
+      if (gfMessages) {
+        gfMessages.textContent = 'Draft saved (mock).';
+        setTimeout(() => { gfMessages.textContent = ''; }, 3000);
+      }
+    });
+  }
+</script>
 </body>
 </html>
