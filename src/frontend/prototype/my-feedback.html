@@ -5,20 +5,72 @@
 <title>My Feedback</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header class="site-header"><a href="index.html" class="brand">Peer Feedback App</a><nav><a href="student-dashboard.html">Dashboard</a></nav></header>
-<main class="container">
-  <h1>My Feedback</h1>
-  <div class="card">
-    <p><strong>Assignment:</strong> Example Assignment</p>
-    <p><strong>Average Rating:</strong> 4.2</p>
-    <p><strong>Comments:</strong></p>
-    <ul>
-      <li>Great collaboration and communication.</li>
-      <li>Consider adding more detailed commit messages.</li>
-    </ul>
-  </div>
-</main>
-<footer class="site-footer"><p><small class="muted">Sample data for prototype.</small></p></footer>
+<body class="theme-teal">
+<div class="layout">
+  <aside class="sidebar" aria-label="Sidebar">
+    <a href="index.html" class="brand-large">Peer Feedback App</a>
+    <nav class="side-nav" aria-label="Primary">
+      <a href="student-dashboard.html">Dashboard</a>
+      <a href="give-feedback.html">Give Feedback</a>
+      <a href="my-feedback.html" class="active">My Feedback</a>
+      <a href="self-assessment.html">Self-Assessment</a>
+      <a href="feedback-history.html">Feedback History</a>
+      <a href="notifications.html">Notifications</a>
+      <a href="profile.html">Profile</a>
+      <a href="privacy-settings.html">Privacy</a>
+      <a href="about-help.html">Help</a>
+      <a href="logout.html">Logout</a>
+    </nav>
+  </aside>
+  <main class="main" id="main-content">
+    <h1>My Feedback</h1>
+    <div class="tiles">
+      <a class="tile" href="feedback-history.html?assignment=A" aria-labelledby="mf-a-title">
+        <h2 id="mf-a-title" class="tile-title">Assignment A</h2>
+        <div class="tile-subtitle">Updated today • New: 2 • Unread: 1</div>
+        <div class="tile-content">
+          <ul>
+            <li>Average rating: 4.2</li>
+            <li>Latest: "Helpful code review on edge cases"</li>
+          </ul>
+        </div>
+      </a>
+      <a class="tile" href="feedback-history.html?assignment=B" aria-labelledby="mf-b-title">
+        <h2 id="mf-b-title" class="tile-title">Assignment B</h2>
+        <div class="tile-subtitle">Updated 2 days ago • Unread: 0</div>
+        <div class="tile-content">
+          <ul>
+            <li>Average rating: 3.8</li>
+            <li>Latest: "Consider simplifying the intro section"</li>
+          </ul>
+        </div>
+      </a>
+      <a class="tile" href="feedback-history.html?assignment=C" aria-labelledby="mf-c-title">
+        <h2 id="mf-c-title" class="tile-title">Assignment C</h2>
+        <div class="tile-subtitle">Updated yesterday • New: 1</div>
+        <div class="tile-content">
+          <ul>
+            <li>Average rating: 4.7</li>
+            <li>Latest: "Great clarity, add tests for error paths"</li>
+          </ul>
+        </div>
+      </a>
+      <a class="tile" href="feedback-history.html?assignment=D" aria-labelledby="mf-d-title">
+        <h2 id="mf-d-title" class="tile-title">Assignment D</h2>
+        <div class="tile-subtitle">Updated last week</div>
+        <div class="tile-content">
+          <ul>
+            <li>Average rating: 4.0</li>
+            <li>Latest: "Nice refactor, watch variable naming"</li>
+          </ul>
+        </div>
+      </a>
+    </div>
+    <div class="actions">
+      <a href="give-feedback.html" class="btn" aria-label="Give feedback to a peer">Give Feedback</a>
+      <a href="feedback-history.html" class="btn" aria-label="View full feedback history">View History</a>
+    </div>
+  </main>
+</div>
 </body>
 </html>
