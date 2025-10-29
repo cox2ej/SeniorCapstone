@@ -5,14 +5,101 @@
 <title>Feedback History</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header class="site-header"><a href="index.html" class="brand">Peer Feedback App</a><nav><a href="student-dashboard.html">Dashboard</a></nav></header>
-<main class="container">
-  <h1>Feedback History</h1>
-  <div class="card">
-    <p>Trend graph placeholder.</p>
-  </div>
-</main>
-<footer class="site-footer"><p><small class="muted">Prototype only.</small></p></footer>
+<body class="theme-teal">
+<div class="layout">
+  <aside class="sidebar" aria-label="Sidebar">
+    <a href="index.html" class="brand-large">Peer Feedback App</a>
+    <nav class="side-nav" aria-label="Primary">
+      <a href="student-dashboard.html">Dashboard</a>
+      <a href="give-feedback.html">Give Feedback</a>
+      <a href="my-feedback.html">My Feedback</a>
+      <a href="self-assessment.html">Self-Assessment</a>
+      <a href="feedback-history.html" class="active">Feedback History</a>
+      <a href="notifications.html">Notifications</a>
+      <a href="profile.html">Profile</a>
+      <a href="privacy-settings.html">Privacy</a>
+      <a href="about-help.html">Help</a>
+      <a href="logout.html">Logout</a>
+    </nav>
+  </aside>
+  <main class="main" id="main-content">
+    <h1 id="fh-title">Feedback History</h1>
+    <p id="fh-filter-note" class="sr-only">Showing results for: All assignments</p>
+
+    <section class="tile" aria-labelledby="trend-heading">
+      <h2 id="trend-heading" class="tile-title">Trends</h2>
+      <div class="tile-content">
+        <p>Trend graph placeholder.</p>
+      </div>
+    </section>
+
+    <div class="tiles" aria-label="Feedback list">
+      <div class="tile" data-assignment="A" aria-labelledby="fh-a-title">
+        <h2 id="fh-a-title" class="tile-title">Assignment A</h2>
+        <div class="tile-subtitle">Oct 10 • Rating 4</div>
+        <div class="tile-content">
+          <ul>
+            <li>"Clear explanations; consider adding examples for edge cases."</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tile" data-assignment="B" aria-labelledby="fh-b-title">
+        <h2 id="fh-b-title" class="tile-title">Assignment B</h2>
+        <div class="tile-subtitle">Oct 08 • Rating 5</div>
+        <div class="tile-content">
+          <ul>
+            <li>"Great structure and detail; strong teamwork shown."</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tile" data-assignment="C" aria-labelledby="fh-c-title">
+        <h2 id="fh-c-title" class="tile-title">Assignment C</h2>
+        <div class="tile-subtitle">Oct 05 • Rating 3</div>
+        <div class="tile-content">
+          <ul>
+            <li>"Good baseline; tighten scope and expand test coverage."</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tile" data-assignment="A" aria-labelledby="fh-a2-title">
+        <h2 id="fh-a2-title" class="tile-title">Assignment A</h2>
+        <div class="tile-subtitle">Oct 02 • Rating 4</div>
+        <div class="tile-content">
+          <ul>
+            <li>"Helpful refactor suggestions; watch naming consistency."</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <p id="fh-empty" class="sr-only">No feedback found for this assignment.</p>
+  </main>
+</div>
+<script>
+  (function() {
+    const params = new URLSearchParams(window.location.search);
+    const filter = params.get('assignment');
+    const tiles = document.querySelectorAll('[data-assignment]');
+    const note = document.getElementById('fh-filter-note');
+    const title = document.getElementById('fh-title');
+    const empty = document.getElementById('fh-empty');
+    let shown = 0;
+    if (filter) {
+      tiles.forEach(t => {
+        const match = t.getAttribute('data-assignment') === filter;
+        t.style.display = match ? '' : 'none';
+        if (match) shown++;
+      });
+      if (note) note.textContent = 'Showing results for: Assignment ' + filter;
+      if (title) title.textContent = 'Feedback History — Assignment ' + filter;
+    }
+    if (filter && shown === 0 && empty) {
+      empty.classList.remove('sr-only');
+    }
+  })();
+</script>
 </body>
 </html>
