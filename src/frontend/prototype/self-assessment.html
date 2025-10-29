@@ -5,20 +5,80 @@
 <title>Self-Assessment</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header class="site-header"><a href="index.html" class="brand">Peer Feedback App</a><nav><a href="student-dashboard.html">Dashboard</a></nav></header>
-<main class="container">
-  <h1>Self-Assessment</h1>
-  <form action="student-dashboard.html" method="get">
-    <label>Self Rating (1-5)</label>
-    <input type="number" min="1" max="5" step="1" required>
-    <label>Reflection</label>
-    <textarea rows="5" placeholder="What went well? What can improve?"></textarea>
-    <div class="actions">
-      <button class="primary" type="submit">Save</button>
-    </div>
-  </form>
-</main>
-<footer class="site-footer"><p><small class="muted">Prototype only.</small></p></footer>
+<body class="theme-teal">
+<div class="layout">
+  <aside class="sidebar" aria-label="Sidebar">
+    <a href="index.html" class="brand-large">Peer Feedback App</a>
+    <nav class="side-nav" aria-label="Primary">
+      <a href="student-dashboard.html">Dashboard</a>
+      <a href="give-feedback.html">Give Feedback</a>
+      <a href="my-feedback.html">My Feedback</a>
+      <a href="self-assessment.html" class="active">Self-Assessment</a>
+      <a href="feedback-history.html">Feedback History</a>
+      <a href="notifications.html">Notifications</a>
+      <a href="profile.html">Profile</a>
+      <a href="privacy-settings.html">Privacy</a>
+      <a href="about-help.html">Help</a>
+      <a href="logout.html">Logout</a>
+    </nav>
+  </aside>
+  <main class="main" id="main-content">
+    <h1 id="sa-title">Self-Assessment</h1>
+    <section class="tile" aria-labelledby="sa-rubric-heading">
+      <h2 id="sa-rubric-heading" class="tile-title">Rubric & Attachments</h2>
+      <div class="tile-content">
+        <h3>Rubric (placeholder)</h3>
+        <ul>
+          <li><strong>Clarity & Organization</strong>: 1–5 — Is your reflection easy to follow and well structured?</li>
+          <li><strong>Specificity</strong>: 1–5 — Do you reference concrete examples?</li>
+          <li><strong>Actionability</strong>: 1–5 — Do you include next steps?</li>
+          <li><strong>Professionalism</strong>: 1–5 — Is the tone respectful and objective?</li>
+        </ul>
+        <h3>Attachments (placeholder)</h3>
+        <ul>
+          <li><a href="#" aria-label="Download assignment brief (mock)">Assignment brief (PDF)</a></li>
+          <li><a href="#" aria-label="Download rubric (mock)">Rubric (PDF)</a></li>
+        </ul>
+      </div>
+    </section>
+    <form action="student-dashboard.html" method="get" novalidate aria-labelledby="sa-title">
+      <label for="sa-assignment">Assignment</label>
+      <select id="sa-assignment" name="assignment" required>
+        <option value="" disabled selected>Select an assignment</option>
+        <option>Assignment A</option>
+        <option>Assignment B</option>
+        <option>Assignment C</option>
+      </select>
+
+      <label for="sa-rating">Rating (1-5)</label>
+      <input id="sa-rating" name="rating" type="number" min="1" max="5" step="1" required aria-describedby="saRatingHelp">
+      <small id="saRatingHelp" class="sr-only">Enter a whole number from 1 to 5.</small>
+
+      <label for="sa-comments">Comments</label>
+      <textarea id="sa-comments" name="comments" rows="6" placeholder="Write a concise reflection: what went well, what to improve, and next steps" aria-describedby="saCommentsHelp"></textarea>
+      <small id="saCommentsHelp" class="sr-only">Provide specific examples and concrete next steps.</small>
+
+      <div class="actions">
+        <button class="btn primary" type="submit" aria-label="Submit self-assessment (mock)">Submit</button>
+        <button type="button" class="btn" id="saSaveDraftBtn" aria-label="Save draft (mock)">Save draft</button>
+        <a href="feedback-guidelines.html" class="btn" aria-label="View feedback guidelines">Guidelines</a>
+        <a href="student-dashboard.html" class="btn" aria-label="Cancel and return to dashboard">Cancel</a>
+      </div>
+    </form>
+    <div id="sa-messages" class="sr-only" aria-live="polite"></div>
+  </main>
+</div>
+<script>
+  const saSaveDraftBtn = document.getElementById('saSaveDraftBtn');
+  const saMessages = document.getElementById('sa-messages');
+  if (saSaveDraftBtn) {
+    saSaveDraftBtn.addEventListener('click', () => {
+      if (saMessages) {
+        saMessages.textContent = 'Draft saved (mock).';
+        setTimeout(() => { saMessages.textContent = ''; }, 3000);
+      }
+    });
+  }
+</script>
 </body>
 </html>
