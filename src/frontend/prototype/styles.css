@@ -4,6 +4,12 @@
   --muted: #555;
   --primary: #2d6cdf;
   --border: #e5e7eb;
+  /* Extended palette (from example) */
+  --rose: #BF9D9D;
+  --sand: #DBC09E;
+  --lemon: #E6DFAF;
+  --teal: #A3CCBE;
+  --blue: #8399A8;
 }
 
 * {
@@ -43,6 +49,14 @@ nav a {
 
 nav a:hover {
   text-decoration: underline;
+}
+
+/* Main content links use blue with rose hover for subtle palette accents */
+.main a:not(.btn) {
+  color: color-mix(in srgb, var(--blue) 45%, var(--fg));
+}
+.main a:not(.btn):hover {
+  color: var(--rose);
 }
 
 .container {
@@ -165,11 +179,18 @@ a.btn,
   justify-content: center;
   padding: 8px 12px;
   border-radius: 6px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--blue) 30%, var(--border));
   background: #fff;
   color: var(--fg);
   text-decoration: none;
   cursor: pointer;
+}
+
+/* Non-primary buttons get a blue accent on hover */
+.btn:not(.primary):hover,
+a.btn:not(.primary):hover {
+  border-color: var(--blue);
+  color: var(--blue);
 }
 
 a.btn.primary,
@@ -241,6 +262,7 @@ small.muted {
 
 .side-nav a:hover {
   background: var(--bg);
+  box-shadow: inset 3px 0 0 var(--rose);
 }
 
 .side-nav a.active {
@@ -309,8 +331,8 @@ small.muted {
 }
 
 .tile-subtitle {
-  color: var(--muted);
-  font-size: .9rem;
+  color: color-mix(in srgb, var(--fg) 75%, var(--muted));
+  font-size: 1rem;
 }
 
 .tiles.featured {
@@ -333,8 +355,46 @@ small.muted {
 
 .tile-content {
   margin-top: 8px;
-  color: var(--muted);
-  font-size: .9rem;
+  color: color-mix(in srgb, var(--fg) 80%, var(--muted));
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.tile-content li {
+  margin: 4px 0;
+}
+
+.tile-content a {
+  color: color-mix(in srgb, var(--blue) 40%, var(--fg));
+  text-decoration: none;
+}
+
+.tile-content a:hover {
+  color: var(--rose);
+  text-decoration: underline;
+}
+
+.tiles .tile,
+.main > .tile {
+  /* default accent falls back to theme accent */
+  --tile-accent: var(--accent);
+  /* subtly tint background and border using the accent */
+  background: color-mix(in srgb, var(--tile-accent) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--tile-accent) 40%, var(--border));
+}
+
+.tiles .tile:nth-child(5n+1), .main > .tile:nth-of-type(5n+1) { --tile-accent: var(--rose); }
+.tiles .tile:nth-child(5n+2), .main > .tile:nth-of-type(5n+2) { --tile-accent: var(--sand); }
+.tiles .tile:nth-child(5n+3), .main > .tile:nth-of-type(5n+3) { --tile-accent: var(--lemon); }
+.tiles .tile:nth-child(5n+4), .main > .tile:nth-of-type(5n+4) { --tile-accent: var(--teal); }
+.tiles .tile:nth-child(5n+5), .main > .tile:nth-of-type(5n+5) { --tile-accent: var(--blue); }
+
+/* Keep primary tiles emphasized with the primary brand color */
+.tiles .tile.primary,
+.main > .tile.primary {
+  --tile-accent: var(--primary);
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
 }
 
 .due-soon {
