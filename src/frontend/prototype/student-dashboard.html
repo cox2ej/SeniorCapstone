@@ -5,17 +5,74 @@
 <title>Student Dashboard</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header class="site-header"><a href="index.html" class="brand">Peer Feedback App</a><nav><a href="notifications.html">Notifications</a> <a href="logout.html">Logout</a></nav></header>
-<main class="container">
-  <h1>Student Dashboard</h1>
-  <div class="grid">
-    <div class="card"><a href="give-feedback.html">Give Feedback</a></div>
-    <div class="card"><a href="my-feedback.html">My Feedback</a></div>
-    <div class="card"><a href="self-assessment.html">Self-Assessment</a></div>
-    <div class="card"><a href="feedback-history.html">Feedback History</a></div>
-  </div>
-</main>
-<footer class="site-footer"><p><small class="muted">Prototype only.</small></p></footer>
+<body class="theme-teal">
+<div class="layout">
+  <aside class="sidebar" aria-label="Sidebar">
+    <a href="index.html" class="brand-large">Peer Feedback App</a>
+    <nav class="side-nav" aria-label="Primary">
+      <a href="student-dashboard.html" class="active">Dashboard</a>
+      <a href="give-feedback.html">Give Feedback</a>
+      <a href="my-feedback.html">My Feedback</a>
+      <a href="self-assessment.html">Self-Assessment</a>
+      <a href="feedback-history.html">Feedback History</a>
+      <a href="notifications.html">Notifications</a>
+      <a href="profile.html">Profile</a>
+      <a href="privacy-settings.html">Privacy</a>
+      <a href="about-help.html">Help</a>
+      <a href="logout.html">Logout</a>
+    </nav>
+  </aside>
+  <main class="main" id="main-content">
+    <h1>Student Dashboard</h1>
+    <p>Quick actions and recent items.</p>
+    <div class="tiles featured">
+      <a class="tile primary tile-lg" href="give-feedback.html" aria-labelledby="tile-give-feedback">
+        <h2 id="tile-give-feedback" class="tile-title">Give Feedback</h2>
+        <div class="tile-subtitle">Start a new feedback submission</div>
+        <div class="tile-content">
+          <ul>
+            <li>Next due: Peer Review 2</li>
+            <li>Drafts: 1</li>
+          </ul>
+        </div>
+      </a>
+      <a class="tile tile-lg" href="my-feedback.html" aria-labelledby="tile-my-feedback">
+        <h2 id="tile-my-feedback" class="tile-title">My Feedback</h2>
+        <div class="tile-subtitle">See feedback you've received</div>
+        <div class="tile-content">
+          <ul>
+            <li>New: 3 items</li>
+            <li>Unread: 1</li>
+          </ul>
+        </div>
+      </a>
+      <a class="tile tile-lg" href="self-assessment.html" aria-labelledby="tile-self-assessment">
+        <h2 id="tile-self-assessment" class="tile-title">Self-Assessment</h2>
+        <div class="tile-subtitle">Reflect on your performance</div>
+        <div class="tile-content">
+          <ul>
+            <li>Current period: Week 8</li>
+          </ul>
+        </div>
+      </a>
+      <a class="tile tile-lg" href="feedback-history.html" aria-labelledby="tile-feedback-history">
+        <h2 id="tile-feedback-history" class="tile-title">Feedback History</h2>
+        <div class="tile-subtitle">Review past submissions</div>
+        <div class="tile-content">
+          <ul>
+            <li>Submissions: 12</li>
+          </ul>
+        </div>
+      </a>
+    </div>
+    <section class="due-soon" aria-labelledby="due-heading">
+      <h2 id="due-heading">Due soon</h2>
+      <ul class="due-list">
+        <li><a href="give-feedback.html">Peer Review 2</a> — due in 2 days</li>
+        <li><a href="self-assessment.html">Self-Assessment</a> — due next week</li>
+      </ul>
+    </section>
+  </main>
+</div>
 </body>
 </html>
