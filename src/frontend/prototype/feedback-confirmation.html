@@ -5,16 +5,56 @@
 <title>Feedback Submitted</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header class="site-header"><a href="index.html" class="brand">Peer Feedback App</a><nav><a href="student-dashboard.html">Dashboard</a></nav></header>
-<main class="container">
-  <h1>Feedback Submitted</h1>
-  <p>Your feedback has been submitted (prototype confirmation).</p>
-  <div class="actions">
-    <a href="student-dashboard.html"><button class="primary">Return to Dashboard</button></a>
-    <a href="give-feedback.html"><button>Give More Feedback</button></a>
-  </div>
-</main>
-<footer class="site-footer"><p><small class="muted">Prototype only.</small></p></footer>
+<body class="theme-teal">
+<div class="layout">
+  <aside class="sidebar" aria-label="Sidebar">
+    <a href="index.html" class="brand-large">Peer Feedback App</a>
+    <nav class="side-nav" aria-label="Primary">
+      <a href="student-dashboard.html">Dashboard</a>
+      <a href="give-feedback.html" class="active">Give Feedback</a>
+      <a href="my-feedback.html">My Feedback</a>
+      <a href="self-assessment.html">Self-Assessment</a>
+      <a href="feedback-history.html">Feedback History</a>
+      <a href="notifications.html">Notifications</a>
+      <a href="profile.html">Profile</a>
+      <a href="privacy-settings.html">Privacy</a>
+      <a href="about-help.html">Help</a>
+      <a href="logout.html">Logout</a>
+    </nav>
+  </aside>
+  <main class="main" id="main-content">
+    <h1>Feedback Submitted</h1>
+    <section class="tile" aria-labelledby="summary-heading">
+      <h2 id="summary-heading" class="tile-title">Submission summary</h2>
+      <div class="tile-content">
+        <ul>
+          <li><strong>Peer:</strong> <span id="cf-peer">Selected peer</span></li>
+          <li><strong>Rating:</strong> <span id="cf-rating">N/A</span></li>
+          <li><strong>Comments:</strong> <span id="cf-comments">(No comments provided)</span></li>
+        </ul>
+      </div>
+    </section>
+    <p>Your feedback has been submitted (prototype confirmation).</p>
+    <div class="actions">
+      <a href="give-feedback.html" class="btn primary" aria-label="Give more feedback">Give more feedback</a>
+      <a href="student-dashboard.html" class="btn" aria-label="Return to dashboard">Back to Dashboard</a>
+    </div>
+    <div id="cf-messages" class="sr-only" aria-live="polite"></div>
+  </main>
+</div>
+<script>
+  (function() {
+    const params = new URLSearchParams(window.location.search);
+    const peer = params.get('peer') || 'Selected peer';
+    const rating = params.get('rating') || 'N/A';
+    const comments = params.get('comments') || '(No comments provided)';
+    const p = document.getElementById('cf-peer');
+    const r = document.getElementById('cf-rating');
+    const c = document.getElementById('cf-comments');
+    if (p) p.textContent = peer;
+    if (r) r.textContent = rating;
+    if (c) c.textContent = comments;
+  })();
+</script>
 </body>
 </html>
