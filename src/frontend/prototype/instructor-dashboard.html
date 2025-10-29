@@ -5,17 +5,85 @@
 <title>Instructor Dashboard</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header class="site-header"><a href="index.html" class="brand">Peer Feedback App</a><nav><a href="notifications.html">Notifications</a> <a href="logout.html">Logout</a></nav></header>
-<main class="container">
-  <h1>Instructor Dashboard</h1>
-  <div class="grid">
-    <div class="card"><a href="create-evaluation.html">Create Evaluation / Assignment</a></div>
-    <div class="card"><a href="manage-courses-groups.html">Manage Courses / Groups</a></div>
-    <div class="card"><a href="aggregated-reports.html">View Aggregated Reports</a></div>
-    <div class="card"><a href="admin-settings.html">Settings (Admin)</a></div>
-  </div>
-</main>
-<footer class="site-footer"><p><small class="muted">Prototype only.</small></p></footer>
+<body class="theme-teal">
+<div class="layout">
+  <aside class="sidebar" aria-label="Sidebar">
+    <a href="index.html" class="brand-large">Peer Feedback App</a>
+    <nav class="side-nav" aria-label="Primary">
+      <a href="instructor-dashboard.html" class="active">Dashboard</a>
+      <a href="create-evaluation.html">Create Evaluation</a>
+      <a href="manage-courses-groups.html">Manage Courses / Groups</a>
+      <a href="aggregated-reports.html">Aggregated Reports</a>
+      <a href="reports-export.html">Reports Export</a>
+      <a href="peer-matching.html">Peer Matching</a>
+      <a href="admin-analytics.html">Analytics</a>
+      <a href="admin-settings.html">Settings</a>
+      <a href="notifications.html">Notifications</a>
+      <a href="profile.html">Profile</a>
+      <a href="about-help.html">Help</a>
+      <a href="logout.html">Logout</a>
+    </nav>
+  </aside>
+  <main class="main" id="main-content">
+    <h1>Instructor Dashboard</h1>
+    <p>Manage evaluations, review progress, and access reports.</p>
+    <div class="tiles featured instructor">
+      <a class="tile primary tile-md" href="create-evaluation.html" aria-labelledby="tile-create-eval">
+        <h2 id="tile-create-eval" class="tile-title">Create Evaluation</h2>
+        <div class="tile-subtitle">Start a new assignment</div>
+        <div class="tile-content">
+          <ul>
+            <li>Templates available: 4</li>
+          </ul>
+        </div>
+      </a>
+      <a class="tile tile-md" href="manage-courses-groups.html" aria-labelledby="tile-manage-courses">
+        <h2 id="tile-manage-courses" class="tile-title">Manage Courses</h2>
+        <div class="tile-subtitle">Courses and groups</div>
+        <div class="tile-content">
+          <ul>
+            <li>Active courses: 3</li>
+          </ul>
+        </div>
+      </a>
+      <a class="tile tile-md" href="aggregated-reports.html" aria-labelledby="tile-agg-reports">
+        <h2 id="tile-agg-reports" class="tile-title">Aggregated Reports</h2>
+        <div class="tile-subtitle">Class performance</div>
+        <div class="tile-content">
+          <ul>
+            <li>New reports: 2</li>
+          </ul>
+        </div>
+      </a>
+      <a class="tile tile-md" href="reports-export.html" aria-labelledby="tile-export">
+        <h2 id="tile-export" class="tile-title">Reports Export</h2>
+        <div class="tile-subtitle">Download data</div>
+        <div class="tile-content">
+          <ul>
+            <li>Queued exports: 0</li>
+          </ul>
+        </div>
+      </a>
+      <a class="tile tile-md" href="peer-matching.html" aria-labelledby="tile-peer-match">
+        <h2 id="tile-peer-match" class="tile-title">Peer Matching</h2>
+        <div class="tile-subtitle">Configure pairing</div>
+        <div class="tile-content">
+          <ul>
+            <li>Pending: 1</li>
+          </ul>
+        </div>
+      </a>
+      <a class="tile tile-md" href="admin-analytics.html" aria-labelledby="tile-analytics">
+        <h2 id="tile-analytics" class="tile-title">Analytics</h2>
+        <div class="tile-subtitle">Trends and insights</div>
+        <div class="tile-content">
+          <ul>
+            <li>New charts: 1</li>
+          </ul>
+        </div>
+      </a>
+    </div>
+  </main>
+</div>
 </body>
 </html>

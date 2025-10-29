@@ -318,8 +318,17 @@ small.muted {
   gap: 24px;
 }
 
+.tiles.featured.instructor {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
 .tile-lg {
   min-height: clamp(340px, 42vh, 560px);
+}
+
+.tile-md {
+  min-height: clamp(260px, 34vh, 420px);
 }
 
 .tile-content {
