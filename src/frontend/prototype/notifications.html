@@ -5,15 +5,35 @@
 <title>Notifications Center</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header class="site-header"><a href="index.html" class="brand">Peer Feedback App</a><nav><a href="student-dashboard.html">Student</a> <a href="instructor-dashboard.html">Instructor</a></nav></header>
-<main class="container">
-  <h1>Notifications Center</h1>
-  <ul>
-    <li>Reminder: Submit feedback for Assignment 1 by Friday.</li>
-    <li>New feedback received for Group Project.</li>
-  </ul>
-</main>
-<footer class="site-footer"><p><small class="muted">Prototype only.</small></p></footer>
+<body class="theme-teal">
+<div class="layout">
+  <aside class="sidebar" aria-label="Sidebar">
+    <a href="index.html" class="brand-large">Peer Feedback App</a>
+    <nav class="side-nav" aria-label="Primary">
+      <a href="student-dashboard.html">Dashboard</a>
+      <a href="give-feedback.html">Give Feedback</a>
+      <a href="my-feedback.html">My Feedback</a>
+      <a href="self-assessment.html">Self-Assessment</a>
+      <a href="feedback-history.html">Feedback History</a>
+      <a href="notifications.html" class="active">Notifications</a>
+      <a href="profile.html">Profile</a>
+      <a href="privacy-settings.html">Privacy</a>
+      <a href="about-help.html">Help</a>
+      <a href="logout.html">Logout</a>
+    </nav>
+  </aside>
+  <main class="main" id="main-content">
+    <h1>Notifications Center</h1>
+    <section class="tile" aria-labelledby="nt-recent">
+      <h2 id="nt-recent" class="tile-title">Recent</h2>
+      <div class="tile-content">
+        <ul>
+          <li>Reminder: Submit feedback for Assignment 1 by Friday.</li>
+          <li>New feedback received for Group Project.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</div>
 </body>
 </html>
