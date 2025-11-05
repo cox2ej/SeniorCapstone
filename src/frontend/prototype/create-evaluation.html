@@ -5,22 +5,45 @@
 <title>Create Evaluation / Assignment</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<header class="site-header"><a href="index.html" class="brand">Peer Feedback App</a><nav><a href="instructor-dashboard.html">Dashboard</a></nav></header>
-<main class="container">
-  <h1>Create Evaluation / Assignment</h1>
-  <form action="instructor-dashboard.html" method="get">
-    <label>Title</label>
-    <input required>
-    <label>Due Date</label>
-    <input type="date" required>
-    <label>Criteria</label>
-    <textarea rows="4" placeholder="e.g., Collaboration, Communication, Quality"></textarea>
-    <div class="actions">
-      <button class="primary" type="submit">Save</button>
-    </div>
-  </form>
-</main>
-<footer class="site-footer"><p><small class="muted">Prototype only.</small></p></footer>
+<body class="theme-teal">
+<div class="layout">
+  <aside class="sidebar" aria-label="Sidebar">
+    <a href="index.html" class="brand-large">Peer Feedback App</a>
+    <nav class="side-nav" aria-label="Primary">
+      <a href="student-dashboard.html">Dashboard</a>
+      <a href="give-feedback.html">Give Feedback</a>
+      <a href="my-feedback.html">My Feedback</a>
+      <a href="self-assessment.html">Self-Assessment</a>
+      <a href="feedback-history.html">Feedback History</a>
+      <a href="notifications.html">Notifications</a>
+      <a href="profile.html">Profile</a>
+      <a href="privacy-settings.html">Privacy</a>
+      <a href="about-help.html">Help</a>
+      <a href="logout.html">Logout</a>
+    </nav>
+  </aside>
+  <main class="main" id="main-content">
+    <h1>Create Evaluation / Assignment</h1>
+    <section class="tile" aria-labelledby="create-eval">
+      <h2 id="create-eval" class="tile-title">New Evaluation</h2>
+      <div class="tile-content">
+        <form action="instructor-dashboard.html" method="get" novalidate>
+          <label for="ce-title">Title</label>
+          <input id="ce-title" name="title" required>
+
+          <label for="ce-due">Due Date</label>
+          <input id="ce-due" name="due" type="date" required>
+
+          <label for="ce-criteria">Criteria</label>
+          <textarea id="ce-criteria" name="criteria" rows="4" placeholder="e.g., Collaboration, Communication, Quality"></textarea>
+
+          <div class="actions">
+            <button class="primary" type="submit">Save</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+</div>
 </body>
 </html>
