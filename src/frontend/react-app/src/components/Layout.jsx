@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 
 export default function Layout() {
@@ -7,6 +7,9 @@ export default function Layout() {
   const location = useLocation()
   const [role, setRole] = useState(() => localStorage.getItem('role') || 'student')
   const [navOpen, setNavOpen] = useState(false)
+  const navRef = useRef(null)
+  const menuBtnRef = useRef(null)
+  const prevFocusRef = useRef(null)
 
   useEffect(() => {
     localStorage.setItem('role', role)
@@ -56,6 +59,65 @@ export default function Layout() {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  // Focus trap, ESC to close, and body scroll lock when drawer open
+  useEffect(() => {
+    if (navOpen) {
+      // store previously focused element
+      prevFocusRef.current = document.activeElement
+      // lock body scroll
+      const prevOverflow = document.body.style.overflow
+      const menuBtnEl = menuBtnRef.current
+      document.body.style.overflow = 'hidden'
+
+      // move focus into drawer
+      const container = navRef.current
+      let focusables = []
+      if (container) {
+        focusables = Array.from(container.querySelectorAll(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ))
+        if (focusables.length) {
+          focusables[0].focus()
+        } else {
+          container.setAttribute('tabindex', '-1')
+          container.focus()
+        }
+      }
+
+      const onKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          setNavOpen(false)
+          return
+        }
+        if (e.key === 'Tab' && container) {
+          const items = focusables.length
+            ? focusables
+            : Array.from(container.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+          if (!items.length) return
+          const first = items[0]
+          const last = items[items.length - 1]
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
+
+      document.addEventListener('keydown', onKeyDown, true)
+
+      return () => {
+        document.body.style.overflow = prevOverflow
+        document.removeEventListener('keydown', onKeyDown, true)
+        // restore focus to menu button
+        if (menuBtnEl) menuBtnEl.focus()
+      }
+    }
+  }, [navOpen])
   return (
     <div className="layout">
       <aside className="sidebar" aria-label="Sidebar" data-open={navOpen ? 'true' : 'false'}>
@@ -77,10 +139,11 @@ export default function Layout() {
           aria-controls="primary-nav"
           aria-expanded={navOpen ? 'true' : 'false'}
           onClick={() => setNavOpen((v) => !v)}
+          ref={menuBtnRef}
         >
           Menu
         </button>
-        <nav className="side-nav" id="primary-nav" aria-label="Primary">
+        <nav className="side-nav" id="primary-nav" aria-label="Primary" ref={navRef}>
           {navLinks.map((link) => (
             <NavLink key={link.to} to={link.to} className={active} onClick={() => setNavOpen(false)}>{link.label}</NavLink>
           ))}
@@ -94,7 +157,7 @@ export default function Layout() {
           onClick={() => setNavOpen(false)}
         />
       )}
-      <main className="main" id="main-content">
+      <main className="main" id="main-content" aria-hidden={navOpen ? 'true' : undefined}>
         <Outlet />
       </main>
     </div>
