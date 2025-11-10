@@ -44,3 +44,43 @@ Example:
 ## WireFrame and Mockups
 - https://www.canva.com/design/DAG0dRS1V6Y/sYGIFebOwW7Gi3mMB_83Gw/view?utm_content=DAG0dRS1V6Y&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h1e287b4ea3
 - https://www.figma.com/design/9fWm02875VwPNblyieF33B/SeniorCapstoneWireframe?node-id=0-1&t=jise7arxQ6fe9Zai-1
+
+## React Frontend Development Setup
+
+- **Project location**
+  - React app lives at `src/frontend/react-app`
+
+- **Prerequisites**
+  - Node.js 20.19+ or 22.12+ (Vite 7 requirement)
+  - npm 10+ recommended
+
+- **Install dependencies**
+  - In `src/frontend/react-app` run:
+    - `npm install`
+
+- **Run the dev server**
+  - `npm run dev`
+  - Open the printed URL (usually `http://localhost:5173`). Allow firewall prompts if asked.
+
+- **Build and preview production**
+  - `npm run build`
+  - `npm run preview` (serves the built app locally)
+
+- **Styling**
+  - App styles are in `src/frontend/react-app/src/styles.css` (copied from the prototype).
+  - Do not edit `src/frontend/prototype/styles.css` for React behavior; keep changes in the React copy.
+
+- **Navigation (key routes)**
+  - Auth: `/login`, `/registration`, `/forgot-password`, `/reset-password`, `/logout`
+  - Student: `/student-dashboard`, `/give-feedback`, `/my-feedback`, `/self-assessment`, `/feedback-history`
+  - Instructor/Admin: `/instructor-dashboard`, `/create-evaluation`, `/manage-courses-groups`, `/aggregated-reports`, `/reports-export`, `/peer-matching`, `/admin-analytics`, `/admin-settings`
+  - Shared: `/notifications`, `/profile`, `/privacy-settings`, `/about-help`
+
+- **Role switch for testing**
+  - Use the sidebar “View as” select to toggle Student/Instructor menus. Choice persists via `localStorage`.
+
+- **Linting**
+  - `npm run lint`
+
+- **Troubleshooting**
+  - If the dev server fails with a Node version error (e.g., crypto.hash or Vite requires newer Node), upgrade Node to 20.19+ or 22.12+.
