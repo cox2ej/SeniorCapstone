@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 
 export default function Layout() {
   const active = ({ isActive }) => (isActive ? 'active' : undefined)
   const navigate = useNavigate()
+  const location = useLocation()
   const [role, setRole] = useState(() => localStorage.getItem('role') || 'student')
+  const [navOpen, setNavOpen] = useState(false)
 
   useEffect(() => {
     localStorage.setItem('role', role)
@@ -41,26 +43,57 @@ export default function Layout() {
     setRole(newRole)
     navigate(newRole === 'student' ? '/student-dashboard' : '/instructor-dashboard')
   }
+
+  // Close mobile menu on route change and when viewport grows
+  useEffect(() => {
+    setNavOpen(false)
+  }, [location.pathname, location.search])
+
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth > 768) setNavOpen(false)
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
   return (
     <div className="layout">
-      <aside className="sidebar" aria-label="Sidebar">
-        <NavLink to={homePath} className="brand-large">Peer Feedback App</NavLink>
+      <aside className="sidebar" aria-label="Sidebar" data-open={navOpen ? 'true' : 'false'}>
+        <NavLink to={homePath} className="brand-large" onClick={() => setNavOpen(false)}>Peer Feedback App</NavLink>
         <label htmlFor="role-select">View as</label>
         <select
           id="role-select"
+          aria-label="View as"
           value={role}
           onChange={(e) => handleRoleChange(e.target.value)}
         >
           <option value="student">Student</option>
           <option value="instructor">Instructor</option>
         </select>
-        <nav className="side-nav" aria-label="Primary">
+        <button
+          type="button"
+          className="menu-toggle btn"
+          aria-label="Toggle navigation"
+          aria-controls="primary-nav"
+          aria-expanded={navOpen ? 'true' : 'false'}
+          onClick={() => setNavOpen((v) => !v)}
+        >
+          Menu
+        </button>
+        <nav className="side-nav" id="primary-nav" aria-label="Primary">
           {navLinks.map((link) => (
-            <NavLink key={link.to} to={link.to} className={active}>{link.label}</NavLink>
+            <NavLink key={link.to} to={link.to} className={active} onClick={() => setNavOpen(false)}>{link.label}</NavLink>
           ))}
-          <NavLink to="/logout" className={active}>Logout</NavLink>
+          <NavLink to="/logout" className={active} onClick={() => setNavOpen(false)}>Logout</NavLink>
         </nav>
       </aside>
+      {navOpen && (
+        <div
+          className="nav-backdrop"
+          aria-hidden="true"
+          onClick={() => setNavOpen(false)}
+        />
+      )}
       <main className="main" id="main-content">
         <Outlet />
       </main>
