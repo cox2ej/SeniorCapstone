@@ -218,6 +218,9 @@ textarea:focus-visible {
   background: #fff;
 }
 
+/* Hidden by default; becomes visible on small screens */
+.menu-toggle { display: none; }
+
 small.muted {
   color: var(--muted);
 }
@@ -435,8 +438,115 @@ small.muted {
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--border);
+    z-index: 1200;
+    background: var(--bg);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px calc(6px + env(safe-area-inset-bottom, 0px));
+    min-height: 56px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.06);
   }
   .main {
-    padding-top: 80px;
+    padding-top: calc(64px + env(safe-area-inset-top, 0px));
   }
+  .brand-large {
+    font-size: 1rem;
+    margin: 0;
+    flex: 1 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Mobile vertical drawer from left */
+  .side-nav {
+    position: fixed;
+    top: calc(56px + env(safe-area-inset-top, 0px));
+    left: 0;
+    height: calc(100vh - 56px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    width: min(80vw, 280px);
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+    box-shadow: 2px 0 12px rgba(0,0,0,.08);
+    overflow-y: auto;
+    padding: 8px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transform: translateX(-100%);
+    transition: transform .2s ease;
+    z-index: 1100;
+  }
+  .sidebar[data-open="true"] .side-nav {
+    transform: translateX(0);
+  }
+  .side-nav a {
+    display: block;
+    white-space: normal;
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+  .sidebar[data-open="true"] + .main {
+    padding-top: calc(64px + env(safe-area-inset-top, 0px));
+  }
+  /* Backdrop behind drawer */
+  .nav-backdrop {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    top: calc(56px + env(safe-area-inset-top, 0px));
+    background: rgba(0,0,0,.25);
+    z-index: 1050;
+  }
+  /* Compact role selector */
+  .sidebar label[for="role-select"] { display: none; }
+  #role-select {
+    width: auto;
+    padding: 4px 8px;
+    height: 32px;
+    font-size: .9rem;
+  }
+  /* Show the menu toggle on small screens */
+  .menu-toggle {
+    display: inline-flex;
+    margin-left: auto;
+    padding: 6px 10px;
+    height: 32px;
+  }
+  .btn { min-height: 44px; }
+  /* Stack or expand action buttons comfortably */
+  .actions > * {
+    flex: 1 1 140px;
+  }
+  /* Allow password rows to wrap if needed */
+  .password-row {
+    flex-wrap: wrap;
+  }
+}
+
+/* Tablet: Narrower sidebar, reduce featured columns */
+@media (max-width: 1024px) {
+  .sidebar { width: 220px; }
+  .tiles.featured.instructor { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Phablet/Small tablets: collapse featured to single column, tweak tile sizes */
+@media (max-width: 768px) {
+  .tiles { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .tiles.featured, .tiles.featured.instructor { grid-template-columns: 1fr; gap: 16px; }
+  .tile-lg { min-height: clamp(280px, 40vh, 480px); }
+  .tile-md { min-height: clamp(200px, 32vh, 340px); }
+}
+
+/* Very small phones: single-column tiles and fully stacked actions */
+@media (max-width: 480px) {
+  .tiles { grid-template-columns: 1fr; gap: 12px; }
+  .actions > * { flex-basis: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; }
+  .side-nav { transition: none !important; }
+  .tile:hover { transform: none !important; }
 }

@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 
 export default function Layout() {
   const active = ({ isActive }) => (isActive ? 'active' : undefined)
   const navigate = useNavigate()
+  const location = useLocation()
   const [role, setRole] = useState(() => localStorage.getItem('role') || 'student')
+  const [navOpen, setNavOpen] = useState(false)
+  const navRef = useRef(null)
+  const menuBtnRef = useRef(null)
+  const prevFocusRef = useRef(null)
 
   useEffect(() => {
     localStorage.setItem('role', role)
@@ -41,27 +46,118 @@ export default function Layout() {
     setRole(newRole)
     navigate(newRole === 'student' ? '/student-dashboard' : '/instructor-dashboard')
   }
+
+  // Close mobile menu on route change and when viewport grows
+  useEffect(() => {
+    setNavOpen(false)
+  }, [location.pathname, location.search])
+
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth > 768) setNavOpen(false)
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  // Focus trap, ESC to close, and body scroll lock when drawer open
+  useEffect(() => {
+    if (navOpen) {
+      // store previously focused element
+      prevFocusRef.current = document.activeElement
+      // lock body scroll
+      const prevOverflow = document.body.style.overflow
+      const menuBtnEl = menuBtnRef.current
+      document.body.style.overflow = 'hidden'
+
+      // move focus into drawer
+      const container = navRef.current
+      let focusables = []
+      if (container) {
+        focusables = Array.from(container.querySelectorAll(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ))
+        if (focusables.length) {
+          focusables[0].focus()
+        } else {
+          container.setAttribute('tabindex', '-1')
+          container.focus()
+        }
+      }
+
+      const onKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          setNavOpen(false)
+          return
+        }
+        if (e.key === 'Tab' && container) {
+          const items = focusables.length
+            ? focusables
+            : Array.from(container.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+          if (!items.length) return
+          const first = items[0]
+          const last = items[items.length - 1]
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
+
+      document.addEventListener('keydown', onKeyDown, true)
+
+      return () => {
+        document.body.style.overflow = prevOverflow
+        document.removeEventListener('keydown', onKeyDown, true)
+        // restore focus to menu button
+        if (menuBtnEl) menuBtnEl.focus()
+      }
+    }
+  }, [navOpen])
   return (
     <div className="layout">
-      <aside className="sidebar" aria-label="Sidebar">
-        <NavLink to={homePath} className="brand-large">Peer Feedback App</NavLink>
+      <aside className="sidebar" aria-label="Sidebar" data-open={navOpen ? 'true' : 'false'}>
+        <NavLink to={homePath} className="brand-large" onClick={() => setNavOpen(false)}>Peer Feedback App</NavLink>
         <label htmlFor="role-select">View as</label>
         <select
           id="role-select"
+          aria-label="View as"
           value={role}
           onChange={(e) => handleRoleChange(e.target.value)}
         >
           <option value="student">Student</option>
           <option value="instructor">Instructor</option>
         </select>
-        <nav className="side-nav" aria-label="Primary">
+        <button
+          type="button"
+          className="menu-toggle btn"
+          aria-label="Toggle navigation"
+          aria-controls="primary-nav"
+          aria-expanded={navOpen ? 'true' : 'false'}
+          onClick={() => setNavOpen((v) => !v)}
+          ref={menuBtnRef}
+        >
+          Menu
+        </button>
+        <nav className="side-nav" id="primary-nav" aria-label="Primary" ref={navRef}>
           {navLinks.map((link) => (
-            <NavLink key={link.to} to={link.to} className={active}>{link.label}</NavLink>
+            <NavLink key={link.to} to={link.to} className={active} onClick={() => setNavOpen(false)}>{link.label}</NavLink>
           ))}
-          <NavLink to="/logout" className={active}>Logout</NavLink>
+          <NavLink to="/logout" className={active} onClick={() => setNavOpen(false)}>Logout</NavLink>
         </nav>
       </aside>
-      <main className="main" id="main-content">
+      {navOpen && (
+        <div
+          className="nav-backdrop"
+          aria-hidden="true"
+          onClick={() => setNavOpen(false)}
+        />
+      )}
+      <main className="main" id="main-content" aria-hidden={navOpen ? 'true' : undefined}>
         <Outlet />
       </main>
     </div>
