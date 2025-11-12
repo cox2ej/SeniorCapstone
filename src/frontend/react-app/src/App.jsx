@@ -24,6 +24,7 @@ import Login from './pages/Login.jsx'
 import Registration from './pages/Registration.jsx'
 import ForgotPassword from './pages/ForgotPassword.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
+import { MockStoreProvider } from './store/mockStore.jsx'
 
 function SkipLink() {
   return (
@@ -89,37 +90,39 @@ export default function App() {
     <>
       <SkipLink />
       <RouteAnnouncer />
-      <Routes>
-        <Route path="/" element={<Navigate to="/student-dashboard" replace />} />
-        {/* Auth routes (no sidebar) */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/registration" element={<Registration />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route element={<Layout /> }>
-          <Route path="/student-dashboard" element={<StudentDashboard />} />
-          <Route path="/instructor-dashboard" element={<InstructorDashboard />} />
-          <Route path="/give-feedback" element={<GiveFeedback />} />
-          <Route path="/feedback-guidelines" element={<FeedbackGuidelines />} />
-          <Route path="/feedback-confirmation" element={<FeedbackConfirmation />} />
-          <Route path="/my-feedback" element={<MyFeedback />} />
-          <Route path="/feedback-history" element={<FeedbackHistory />} />
-          <Route path="/self-assessment" element={<SelfAssessment />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/about-help" element={<AboutHelp />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/privacy-settings" element={<PrivacySettings />} />
-          <Route path="/create-evaluation" element={<CreateEvaluation />} />
-          <Route path="/manage-courses-groups" element={<ManageCoursesGroups />} />
-          <Route path="/aggregated-reports" element={<AggregatedReports />} />
-          <Route path="/reports-export" element={<ReportsExport />} />
-          <Route path="/peer-matching" element={<PeerMatching />} />
-          <Route path="/admin-analytics" element={<AdminAnalytics />} />
-          <Route path="/admin-settings" element={<AdminSettings />} />
-        </Route>
-        <Route path="/logout" element={<LogoutCard />} />
-        <Route path="*" element={<Placeholder title="Page not found" />} />
-      </Routes>
+      <MockStoreProvider>
+        <Routes>
+          <Route path="/" element={<Navigate to="/student-dashboard" replace />} />
+          {/* Auth routes (no sidebar) */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/registration" element={<Registration />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route element={<Layout /> }>
+            <Route path="/student-dashboard" element={<StudentDashboard />} />
+            <Route path="/instructor-dashboard" element={<InstructorDashboard />} />
+            <Route path="/give-feedback" element={<GiveFeedback />} />
+            <Route path="/feedback-guidelines" element={<FeedbackGuidelines />} />
+            <Route path="/feedback-confirmation" element={<FeedbackConfirmation />} />
+            <Route path="/my-feedback" element={<MyFeedback />} />
+            <Route path="/feedback-history" element={<FeedbackHistory />} />
+            <Route path="/self-assessment" element={<SelfAssessment />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/about-help" element={<AboutHelp />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/privacy-settings" element={<PrivacySettings />} />
+            <Route path="/create-evaluation" element={<CreateEvaluation />} />
+            <Route path="/manage-courses-groups" element={<ManageCoursesGroups />} />
+            <Route path="/aggregated-reports" element={<AggregatedReports />} />
+            <Route path="/reports-export" element={<ReportsExport />} />
+            <Route path="/peer-matching" element={<PeerMatching />} />
+            <Route path="/admin-analytics" element={<AdminAnalytics />} />
+            <Route path="/admin-settings" element={<AdminSettings />} />
+          </Route>
+          <Route path="/logout" element={<LogoutCard />} />
+          <Route path="*" element={<Placeholder title="Page not found" />} />
+        </Routes>
+      </MockStoreProvider>
     </>
   )
 }

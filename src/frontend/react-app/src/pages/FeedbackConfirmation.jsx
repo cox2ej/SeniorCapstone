@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
+import { useMockStore } from '../store/mockStore.js'
 
 export default function FeedbackConfirmation() {
   const { search } = useLocation()
@@ -6,6 +7,9 @@ export default function FeedbackConfirmation() {
   const peer = params.get('peer') || 'Selected peer'
   const rating = params.get('rating') || 'N/A'
   const comments = params.get('comments') || '(No comments provided)'
+  const assignmentId = params.get('assignmentId') || ''
+  const { getAssignmentById, users } = useMockStore()
+  const assignment = assignmentId ? getAssignmentById(assignmentId) : null
 
   return (
     <>
@@ -14,9 +18,20 @@ export default function FeedbackConfirmation() {
         <h2 id="summary-heading" className="tile-title">Submission summary</h2>
         <div className="tile-content">
           <ul>
-            <li><strong>Peer:</strong> <span>{peer}</span></li>
-            <li><strong>Rating:</strong> <span>{rating}</span></li>
-            <li><strong>Comments:</strong> <span>{comments}</span></li>
+            {assignment ? (
+              <>
+                <li><strong>Assignment:</strong> <span>{assignment.title}</span></li>
+                <li><strong>Owner:</strong> <span>{users[assignment.owner]?.name || assignment.owner}</span></li>
+                <li><strong>Rating:</strong> <span>{rating}</span></li>
+                <li><strong>Comments:</strong> <span>{comments}</span></li>
+              </>
+            ) : (
+              <>
+                <li><strong>Peer:</strong> <span>{peer}</span></li>
+                <li><strong>Rating:</strong> <span>{rating}</span></li>
+                <li><strong>Comments:</strong> <span>{comments}</span></li>
+              </>
+            )}
           </ul>
         </div>
       </section>

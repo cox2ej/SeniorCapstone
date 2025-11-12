@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { useMockStore } from '../store/mockStore.jsx'
 
 export default function Layout() {
   const active = ({ isActive }) => (isActive ? 'active' : undefined)
@@ -10,6 +11,7 @@ export default function Layout() {
   const navRef = useRef(null)
   const menuBtnRef = useRef(null)
   const prevFocusRef = useRef(null)
+  const { currentUser, setCurrentUser } = useMockStore()
 
   useEffect(() => {
     localStorage.setItem('role', role)
@@ -132,6 +134,20 @@ export default function Layout() {
           <option value="student">Student</option>
           <option value="instructor">Instructor</option>
         </select>
+        {role === 'student' && (
+          <>
+            <label htmlFor="user-select">User</label>
+            <select
+              id="user-select"
+              aria-label="User"
+              value={currentUser}
+              onChange={(e) => setCurrentUser(e.target.value)}
+            >
+              <option value="student1">Student 1</option>
+              <option value="student2">Student 2</option>
+            </select>
+          </>
+        )}
         <button
           type="button"
           className="menu-toggle btn"
@@ -156,6 +172,20 @@ export default function Layout() {
               <option value="instructor">Instructor</option>
             </select>
           </div>
+          {role === 'student' && (
+            <div className="role-mobile">
+              <label htmlFor="user-select-mobile">User</label>
+              <select
+                id="user-select-mobile"
+                aria-label="User"
+                value={currentUser}
+                onChange={(e) => setCurrentUser(e.target.value)}
+              >
+                <option value="student1">Student 1</option>
+                <option value="student2">Student 2</option>
+              </select>
+            </div>
+          )}
           {navLinks.map((link) => (
             <NavLink key={link.to} to={link.to} className={active} onClick={() => setNavOpen(false)}>{link.label}</NavLink>
           ))}

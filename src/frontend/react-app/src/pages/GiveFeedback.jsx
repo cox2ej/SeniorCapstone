@@ -1,8 +1,15 @@
 import { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useMockStore } from '../store/mockStore.jsx'
 
 export default function GiveFeedback() {
   const navigate = useNavigate()
+  const { search } = useLocation()
+  const paramsIn = new URLSearchParams(search)
+  const assignmentId = paramsIn.get('assignmentId') || ''
+  const { getAssignmentById, addReview, users, currentUser, getAssignmentsForReview } = useMockStore()
+  const assignment = assignmentId ? getAssignmentById(assignmentId) : null
+  const reviewQueue = assignment ? [] : getAssignmentsForReview(currentUser)
   const [message, setMessage] = useState('')
   const [errors, setErrors] = useState([])
   const errorSummaryRef = useRef(null)
@@ -11,11 +18,9 @@ export default function GiveFeedback() {
     e.preventDefault()
     const form = e.currentTarget
     const data = new FormData(form)
-    const peer = data.get('peer') || ''
     const rating = data.get('rating') || ''
     const comments = data.get('comments') || ''
     const errs = []
-    if (!peer) errs.push({ field: 'peer', message: 'Select a peer' })
     const n = parseInt(String(rating), 10)
     if (!rating) errs.push({ field: 'rating', message: 'Enter a rating from 1 to 5' })
     else if (isNaN(n) || n < 1 || n > 5) errs.push({ field: 'rating', message: 'Rating must be a whole number from 1 to 5' })
@@ -24,8 +29,20 @@ export default function GiveFeedback() {
       setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
       return
     }
-    const params = new URLSearchParams({ peer, rating, comments })
-    navigate(`/feedback-confirmation?${params.toString()}`)
+    if (assignmentId && assignment) {
+      addReview({ assignmentId, rating: n, comments })
+      const out = new URLSearchParams({ assignmentId, rating: String(n), comments })
+      navigate(`/feedback-confirmation?${out.toString()}`)
+      return
+    }
+    const peer = data.get('peer') || ''
+    if (!peer) {
+      setErrors([{ field: 'peer', message: 'Select a peer' }])
+      setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
+      return
+    }
+    const out = new URLSearchParams({ peer, rating, comments })
+    navigate(`/feedback-confirmation?${out.toString()}`)
   }
 
   function handleSaveDraft() {
@@ -66,24 +83,60 @@ export default function GiveFeedback() {
         </div>
       )}
 
+      {!assignment && (
+        <section className="tile" aria-labelledby="gf-queue-title">
+          <h2 id="gf-queue-title" className="tile-title">Assignments to review</h2>
+          <div className="tile-content">
+            {reviewQueue.length === 0 ? (
+              <p>No assignments to review.</p>
+            ) : (
+              <ul>
+                {reviewQueue.map(a => (
+                  <li key={a.id}>
+                    <strong>{a.title}</strong>
+                    {a.description ? <div className="muted">{a.description}</div> : null}
+                    <div className="actions" style={{ marginTop: 8 }}>
+                      <Link className="btn primary" to={`/give-feedback?assignmentId=${a.id}`}>Review</Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      )}
+
       <form onSubmit={onSubmit} noValidate aria-labelledby="give-feedback-title">
-        <label htmlFor="peer">Peer</label>
-        <select
-          id="peer"
-          name="peer"
-          required
-          defaultValue=""
-          aria-invalid={errors.some(e => e.field === 'peer') ? 'true' : 'false'}
-          aria-describedby={errors.some(e => e.field === 'peer') ? 'peer-error' : undefined}
-          className={errors.some(e => e.field === 'peer') ? 'input-error' : undefined}
-        >
-          <option value="" disabled>Select a peer</option>
-          <option>Peer A</option>
-          <option>Peer B</option>
-          <option>Peer C</option>
-        </select>
-        {errors.some(e => e.field === 'peer') && (
-          <p id="peer-error" className="help-error">{errors.find(e => e.field === 'peer')?.message}</p>
+        {assignment ? (
+          <>
+            <p id="assignment-context"><strong>Reviewing:</strong> {assignment.title} <span className="muted">(Owner: {users[assignment.owner]?.name || assignment.owner})</span></p>
+            {assignment.description ? (
+              <p>{assignment.description}</p>
+            ) : (
+              <p className="muted">No description provided.</p>
+            )}
+          </>
+        ) : (
+          <>
+            <label htmlFor="peer">Peer</label>
+            <select
+              id="peer"
+              name="peer"
+              required
+              defaultValue=""
+              aria-invalid={errors.some(e => e.field === 'peer') ? 'true' : 'false'}
+              aria-describedby={errors.some(e => e.field === 'peer') ? 'peer-error' : undefined}
+              className={errors.some(e => e.field === 'peer') ? 'input-error' : undefined}
+            >
+              <option value="" disabled>Select a peer</option>
+              <option>Peer A</option>
+              <option>Peer B</option>
+              <option>Peer C</option>
+            </select>
+            {errors.some(e => e.field === 'peer') && (
+              <p id="peer-error" className="help-error">{errors.find(e => e.field === 'peer')?.message}</p>
+            )}
+          </>
         )}
 
         <label htmlFor="rating">Rating (1-5)</label>
