@@ -135,6 +135,27 @@ label {
   margin-top: 4px;
 }
 
+.error-summary {
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #7f1d1d;
+  padding: 12px;
+  border-radius: 8px;
+  margin: 12px 0 16px;
+}
+.error-summary h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+}
+.error-summary ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.error-summary a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .input-error {
   border-color: #dc2626 !important;
 }
@@ -216,6 +237,42 @@ textarea:focus-visible {
   text-align: center;
   color: var(--muted);
   background: #fff;
+}
+
+/* Skip link: hidden until focused */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: #fff;
+  color: var(--fg);
+  padding: 8px 12px;
+  border: 2px solid var(--primary);
+  border-radius: 6px;
+  z-index: 1700; /* above sticky header and drawer */
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  position: fixed;
+  left: 12px;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+}
+
+/* On wider screens, position skip link to the right of the sidebar */
+@media (min-width: 641px) {
+  .skip-link:focus,
+  .skip-link:focus-visible {
+    left: calc(260px + 16px); /* sidebar width + gutter */
+    top: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .skip-link:focus,
+  .skip-link:focus-visible {
+    left: 12px;
+    top: calc(56px + env(safe-area-inset-top, 0px) + 8px); /* below sticky header */
+  }
 }
 
 /* Hidden by default; becomes visible on small screens */

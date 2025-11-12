@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 export default function ForgotPassword() {
@@ -6,20 +6,42 @@ export default function ForgotPassword() {
   const params = new URLSearchParams(search)
   const successEmail = params.get('email')
   const [email, setEmail] = useState('')
+  const [errors, setErrors] = useState([])
+  const errorSummaryRef = useRef(null)
   const navigate = useNavigate()
 
   function onSubmit(e) {
     e.preventDefault()
-    if (!email) return
+    const errs = []
+    const trimmed = email.trim()
+    const valid = /.+@.+\..+/.test(trimmed)
+    if (!trimmed) errs.push({ field: 'email', message: 'Enter your email address' })
+    else if (!valid) errs.push({ field: 'email', message: 'Enter an email address in the correct format, like name@example.com' })
+    if (errs.length) {
+      setErrors(errs)
+      setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
+      return
+    }
     const sp = new URLSearchParams({ email })
     navigate(`/forgot-password?${sp.toString()}`)
   }
 
   return (
-    <div className="auth-shell">
+    <main id="main-content" className="auth-shell" tabIndex="-1">
       <section className="auth-card" aria-labelledby="fp-title">
         <h1 id="fp-title">Reset your password</h1>
         <p>Enter the email associated with your account and we'll send you a reset link.</p>
+
+        {errors.length > 0 && (
+          <div className="error-summary" role="alert" aria-labelledby="fp-error-summary-title" tabIndex="-1" ref={errorSummaryRef}>
+            <h2 id="fp-error-summary-title">There is a problem</h2>
+            <ul>
+              {errors.map(e => (
+                <li key={e.field}><a href={`#${e.field}`}>{e.message}</a></li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <form onSubmit={onSubmit} noValidate aria-labelledby="fp-title">
           <label htmlFor="email">Email</label>
@@ -30,11 +52,16 @@ export default function ForgotPassword() {
             inputMode="email"
             autoComplete="email"
             required
-            aria-describedby="emailHelp"
+            aria-describedby={`emailHelp${errors.length ? ' email-error' : ''}`}
+            aria-invalid={errors.some(e => e.field === 'email') ? 'true' : 'false'}
+            className={errors.some(e => e.field === 'email') ? 'input-error' : undefined}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
           <small id="emailHelp" className="sr-only">Enter your email address. If an account exists, a reset link will be sent.</small>
+          {errors.some(e => e.field === 'email') && (
+            <p id="email-error" className="help-error">{errors.find(e => e.field === 'email')?.message}</p>
+          )}
 
           <div className="actions">
             <button className="primary" type="submit" aria-label="Send password reset link (mock)">Send reset link</button>
@@ -52,6 +79,6 @@ export default function ForgotPassword() {
 
         <div id="form-messages" className="sr-only" aria-live="polite"></div>
       </section>
-    </div>
+    </main>
   )
 }

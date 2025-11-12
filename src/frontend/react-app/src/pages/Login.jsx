@@ -1,24 +1,63 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 export default function Login() {
   const [showPw, setShowPw] = useState(false)
+  const [errors, setErrors] = useState([])
+  const errorSummaryRef = useRef(null)
   const navigate = useNavigate()
 
   function onSubmit(e) {
     e.preventDefault()
+    const form = e.currentTarget
+    const username = form.username.value.trim()
+    const password = form.password.value.trim()
+    const errs = []
+    if (!username) errs.push({ field: 'username', message: 'Enter your email or username' })
+    if (!password) errs.push({ field: 'password', message: 'Enter your password' })
+    if (errs.length) {
+      setErrors(errs)
+      setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
+      return
+    }
     navigate('/student-dashboard')
   }
 
+  const hasError = (field) => errors.some(e => e.field === field)
+  const getMsg = (field) => (errors.find(e => e.field === field)?.message || '')
+
   return (
-    <div className="auth-shell">
+    <main id="main-content" className="auth-shell" tabIndex="-1">
       <section className="auth-card" aria-labelledby="login-title">
         <h1 id="login-title">Login</h1>
         <p>Prototype login. This will take you into the app.</p>
 
+        {errors.length > 0 && (
+          <div className="error-summary" role="alert" aria-labelledby="login-error-summary-title" tabIndex="-1" ref={errorSummaryRef}>
+            <h2 id="login-error-summary-title">There is a problem</h2>
+            <ul>
+              {errors.map(e => (
+                <li key={e.field}><a href={`#${e.field}`}>{e.message}</a></li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <form onSubmit={onSubmit} noValidate>
           <label htmlFor="username">Email or Username</label>
-          <input id="username" name="username" type="text" autoComplete="username" required autoFocus />
+          <input
+            id="username"
+            name="username"
+            type="text"
+            autoComplete="username"
+            required
+            aria-invalid={hasError('username') ? 'true' : 'false'}
+            aria-describedby={hasError('username') ? 'username-error' : undefined}
+            className={hasError('username') ? 'input-error' : undefined}
+          />
+          {hasError('username') && (
+            <p id="username-error" className="help-error">{getMsg('username')}</p>
+          )}
 
           <label htmlFor="password">Password</label>
           <div className="password-row">
@@ -28,7 +67,9 @@ export default function Login() {
               type={showPw ? 'text' : 'password'}
               autoComplete="current-password"
               required
-              aria-describedby="passwordHelp"
+              aria-describedby={`passwordHelp${hasError('password') ? ' password-error' : ''}`}
+              aria-invalid={hasError('password') ? 'true' : 'false'}
+              className={hasError('password') ? 'input-error' : undefined}
             />
             <button
               type="button"
@@ -42,6 +83,9 @@ export default function Login() {
             </button>
           </div>
           <small id="passwordHelp" className="sr-only">Password field. Use the button to show or hide the password.</small>
+          {hasError('password') && (
+            <p id="password-error" className="help-error">{getMsg('password')}</p>
+          )}
 
           <div className="actions">
             <button className="primary" type="submit" aria-label="Sign in (mock)">Sign in</button>
@@ -58,6 +102,6 @@ export default function Login() {
         <p><small className="muted">No authentication is performed in this prototype.</small></p>
         <div id="form-messages" className="sr-only" aria-live="polite"></div>
       </section>
-    </div>
+    </main>
   )
 }

@@ -19,7 +19,7 @@ export default function Layout() {
     { to: '/student-dashboard', label: 'Dashboard' },
     { to: '/give-feedback', label: 'Give Feedback' },
     { to: '/my-feedback', label: 'My Feedback' },
-    { to: '/self-assessment', label: 'Self-Assessment' },
+    { to: '/self-assessment', label: 'Self-Assessment' },  
     { to: '/feedback-history', label: 'Feedback History' },
   ]
   const instructorLinks = [
@@ -157,7 +157,7 @@ export default function Layout() {
           onClick={() => setNavOpen(false)}
         />
       )}
-      <main className="main" id="main-content" aria-hidden={navOpen ? 'true' : undefined}>
+      <main className="main" id="main-content" tabIndex="-1" aria-hidden={navOpen ? 'true' : undefined}>
         <Outlet />
       </main>
     </div>

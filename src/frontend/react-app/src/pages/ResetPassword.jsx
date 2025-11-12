@@ -32,7 +32,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="auth-shell">
+    <main id="main-content" className="auth-shell" tabIndex="-1">
       <section className="auth-card" aria-labelledby="rp-title">
         <h1 id="rp-title">Set a new password</h1>
         <p>Enter and confirm your new password.</p>
@@ -71,8 +71,9 @@ export default function ResetPassword() {
               type={show2 ? 'text' : 'password'}
               autoComplete="new-password"
               required
-              aria-describedby="confirmHelp"
+              aria-describedby={`confirmHelp${bothFilled && !matches ? ' confirm-error' : ''}`}
               aria-invalid={bothFilled && !matches ? 'true' : 'false'}
+              className={bothFilled && !matches ? 'input-error' : undefined}
               value={pw2}
               onChange={(e) => onPw2Change(e.target.value)}
             />
@@ -88,6 +89,9 @@ export default function ResetPassword() {
             </button>
           </div>
           <small id="confirmHelp" className="sr-only">Must match the new password.</small>
+          {bothFilled && !matches && (
+            <p id="confirm-error" className="help-error">Passwords do not match.</p>
+          )}
 
           <div className="actions">
             <button className="primary" id="resetSubmit" type="submit" disabled={!canSubmit} aria-label="Reset password (mock)">Reset password</button>
@@ -97,6 +101,6 @@ export default function ResetPassword() {
 
         <div id="rp-messages" className="sr-only" aria-live="polite">{msg}</div>
       </section>
-    </div>
+    </main>
   )
 }

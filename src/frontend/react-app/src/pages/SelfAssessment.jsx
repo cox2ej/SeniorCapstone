@@ -1,12 +1,28 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 export default function SelfAssessment() {
   const [message, setMessage] = useState('')
+  const [errors, setErrors] = useState([])
+  const errorSummaryRef = useRef(null)
   const navigate = useNavigate()
 
   function onSubmit(e) {
     e.preventDefault()
+    const form = e.currentTarget
+    const data = new FormData(form)
+    const assignment = data.get('assignment') || ''
+    const rating = data.get('rating') || ''
+    const errs = []
+    if (!assignment) errs.push({ field: 'sa-assignment', message: 'Select an assignment' })
+    const n = parseInt(String(rating), 10)
+    if (!rating) errs.push({ field: 'sa-rating', message: 'Enter a rating from 1 to 5' })
+    else if (isNaN(n) || n < 1 || n > 5) errs.push({ field: 'sa-rating', message: 'Rating must be a whole number from 1 to 5' })
+    if (errs.length) {
+      setErrors(errs)
+      setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
+      return
+    }
     navigate('/student-dashboard')
   }
 
@@ -37,18 +53,51 @@ export default function SelfAssessment() {
         </div>
       </section>
 
+      {errors.length > 0 && (
+        <div className="error-summary" role="alert" aria-labelledby="sa-error-summary-title" tabIndex="-1" ref={errorSummaryRef}>
+          <h2 id="sa-error-summary-title">There is a problem</h2>
+          <ul>
+            {errors.map(e => (
+              <li key={e.field}><a href={`#${e.field}`}>{e.message}</a></li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <form onSubmit={onSubmit} noValidate aria-labelledby="sa-title">
         <label htmlFor="sa-assignment">Assignment</label>
-        <select id="sa-assignment" name="assignment" required defaultValue="">
+        <select
+          id="sa-assignment"
+          name="assignment"
+          required
+          defaultValue=""
+          aria-invalid={errors.some(e => e.field === 'sa-assignment') ? 'true' : 'false'}
+          aria-describedby={errors.some(e => e.field === 'sa-assignment') ? 'sa-assignment-error' : undefined}
+          className={errors.some(e => e.field === 'sa-assignment') ? 'input-error' : undefined}
+        >
           <option value="" disabled>Select an assignment</option>
           <option>Assignment A</option>
           <option>Assignment B</option>
           <option>Assignment C</option>
         </select>
+        {errors.some(e => e.field === 'sa-assignment') && (
+          <p id="sa-assignment-error" className="help-error">{errors.find(e => e.field === 'sa-assignment')?.message}</p>
+        )}
 
         <label htmlFor="sa-rating">Rating (1-5)</label>
-        <input id="sa-rating" name="rating" type="number" min="1" max="5" step="1" required aria-describedby="saRatingHelp" />
+        <input
+          id="sa-rating"
+          name="rating"
+          type="number" min="1" max="5" step="1"
+          required
+          aria-describedby={`saRatingHelp${errors.some(e => e.field === 'sa-rating') ? ' sa-rating-error' : ''}`}
+          aria-invalid={errors.some(e => e.field === 'sa-rating') ? 'true' : 'false'}
+          className={errors.some(e => e.field === 'sa-rating') ? 'input-error' : undefined}
+        />
         <small id="saRatingHelp" className="sr-only">Enter a whole number from 1 to 5.</small>
+        {errors.some(e => e.field === 'sa-rating') && (
+          <p id="sa-rating-error" className="help-error">{errors.find(e => e.field === 'sa-rating')?.message}</p>
+        )}
 
         <label htmlFor="sa-comments">Comments</label>
         <textarea id="sa-comments" name="comments" rows={6} placeholder="Write a concise reflection: what went well, what to improve, and next steps" aria-describedby="saCommentsHelp" />

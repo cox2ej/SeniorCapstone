@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 export default function GiveFeedback() {
   const navigate = useNavigate()
   const [message, setMessage] = useState('')
+  const [errors, setErrors] = useState([])
+  const errorSummaryRef = useRef(null)
 
   function onSubmit(e) {
     e.preventDefault()
@@ -12,6 +14,16 @@ export default function GiveFeedback() {
     const peer = data.get('peer') || ''
     const rating = data.get('rating') || ''
     const comments = data.get('comments') || ''
+    const errs = []
+    if (!peer) errs.push({ field: 'peer', message: 'Select a peer' })
+    const n = parseInt(String(rating), 10)
+    if (!rating) errs.push({ field: 'rating', message: 'Enter a rating from 1 to 5' })
+    else if (isNaN(n) || n < 1 || n > 5) errs.push({ field: 'rating', message: 'Rating must be a whole number from 1 to 5' })
+    if (errs.length) {
+      setErrors(errs)
+      setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
+      return
+    }
     const params = new URLSearchParams({ peer, rating, comments })
     navigate(`/feedback-confirmation?${params.toString()}`)
   }
@@ -43,18 +55,51 @@ export default function GiveFeedback() {
         </div>
       </section>
 
+      {errors.length > 0 && (
+        <div className="error-summary" role="alert" aria-labelledby="gf-error-summary-title" tabIndex="-1" ref={errorSummaryRef}>
+          <h2 id="gf-error-summary-title">There is a problem</h2>
+          <ul>
+            {errors.map(e => (
+              <li key={e.field}><a href={`#${e.field}`}>{e.message}</a></li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <form onSubmit={onSubmit} noValidate aria-labelledby="give-feedback-title">
         <label htmlFor="peer">Peer</label>
-        <select id="peer" name="peer" required defaultValue="">
+        <select
+          id="peer"
+          name="peer"
+          required
+          defaultValue=""
+          aria-invalid={errors.some(e => e.field === 'peer') ? 'true' : 'false'}
+          aria-describedby={errors.some(e => e.field === 'peer') ? 'peer-error' : undefined}
+          className={errors.some(e => e.field === 'peer') ? 'input-error' : undefined}
+        >
           <option value="" disabled>Select a peer</option>
           <option>Peer A</option>
           <option>Peer B</option>
           <option>Peer C</option>
         </select>
+        {errors.some(e => e.field === 'peer') && (
+          <p id="peer-error" className="help-error">{errors.find(e => e.field === 'peer')?.message}</p>
+        )}
 
         <label htmlFor="rating">Rating (1-5)</label>
-        <input id="rating" name="rating" type="number" min="1" max="5" step="1" required aria-describedby="ratingHelp" />
+        <input
+          id="rating"
+          name="rating"
+          type="number" min="1" max="5" step="1"
+          required
+          aria-describedby={`ratingHelp${errors.some(e => e.field === 'rating') ? ' rating-error' : ''}`}
+          aria-invalid={errors.some(e => e.field === 'rating') ? 'true' : 'false'}
+          className={errors.some(e => e.field === 'rating') ? 'input-error' : undefined}
+        />
         <small id="ratingHelp" className="sr-only">Enter a whole number from 1 to 5.</small>
+        {errors.some(e => e.field === 'rating') && (
+          <p id="rating-error" className="help-error">{errors.find(e => e.field === 'rating')?.message}</p>
+        )}
 
         <label htmlFor="comments">Comments</label>
         <textarea id="comments" name="comments" rows={6} placeholder="Write constructive, specific, and actionable feedback" aria-describedby="commentsHelp" />
