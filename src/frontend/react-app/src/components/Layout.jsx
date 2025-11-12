@@ -19,7 +19,7 @@ export default function Layout() {
     { to: '/student-dashboard', label: 'Dashboard' },
     { to: '/give-feedback', label: 'Give Feedback' },
     { to: '/my-feedback', label: 'My Feedback' },
-    { to: '/self-assessment', label: 'Self-Assessment' },
+    { to: '/self-assessment', label: 'Self-Assessment' },  
     { to: '/feedback-history', label: 'Feedback History' },
   ]
   const instructorLinks = [
@@ -75,7 +75,7 @@ export default function Layout() {
       let focusables = []
       if (container) {
         focusables = Array.from(container.querySelectorAll(
-          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
         ))
         if (focusables.length) {
           focusables[0].focus()
@@ -94,7 +94,7 @@ export default function Layout() {
         if (e.key === 'Tab' && container) {
           const items = focusables.length
             ? focusables
-            : Array.from(container.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+            : Array.from(container.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
           if (!items.length) return
           const first = items[0]
           const last = items[items.length - 1]
@@ -144,6 +144,18 @@ export default function Layout() {
           Menu
         </button>
         <nav className="side-nav" id="primary-nav" aria-label="Primary" ref={navRef}>
+          <div className="role-mobile">
+            <label htmlFor="role-select-mobile">View as</label>
+            <select
+              id="role-select-mobile"
+              aria-label="View as"
+              value={role}
+              onChange={(e) => handleRoleChange(e.target.value)}
+            >
+              <option value="student">Student</option>
+              <option value="instructor">Instructor</option>
+            </select>
+          </div>
           {navLinks.map((link) => (
             <NavLink key={link.to} to={link.to} className={active} onClick={() => setNavOpen(false)}>{link.label}</NavLink>
           ))}
@@ -157,7 +169,7 @@ export default function Layout() {
           onClick={() => setNavOpen(false)}
         />
       )}
-      <main className="main" id="main-content" aria-hidden={navOpen ? 'true' : undefined}>
+      <main className="main" id="main-content" tabIndex="-1" aria-hidden={navOpen ? 'true' : undefined}>
         <Outlet />
       </main>
     </div>

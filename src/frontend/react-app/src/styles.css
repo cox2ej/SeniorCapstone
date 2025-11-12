@@ -3,6 +3,7 @@
   --fg: #111;
   --muted: #555;
   --primary: #2d6cdf;
+  --primary-strong: color-mix(in srgb, var(--primary) 78%, #000);
   --border: #e5e7eb;
   /* Extended palette (from example) */
   --rose: #BF9D9D;
@@ -43,7 +44,7 @@ body {
 
 nav a {
   margin-left: 12px;
-  color: var(--primary);
+  color: var(--primary-strong);
   text-decoration: none;
 }
 
@@ -56,7 +57,8 @@ nav a:hover {
   color: color-mix(in srgb, var(--blue) 45%, var(--fg));
 }
 .main a:not(.btn):hover {
-  color: var(--rose);
+  color: inherit;
+  text-decoration: underline;
 }
 
 .container {
@@ -135,6 +137,27 @@ label {
   margin-top: 4px;
 }
 
+.error-summary {
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #7f1d1d;
+  padding: 12px;
+  border-radius: 8px;
+  margin: 12px 0 16px;
+}
+.error-summary h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+}
+.error-summary ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.error-summary a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .input-error {
   border-color: #dc2626 !important;
 }
@@ -195,9 +218,9 @@ a.btn:not(.primary):hover {
 
 a.btn.primary,
 .btn.primary {
-  background: var(--primary);
+  background: var(--primary-strong);
   color: #fff;
-  border-color: var(--primary);
+  border-color: var(--primary-strong);
 }
 
 button:focus-visible,
@@ -205,8 +228,8 @@ a.btn:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
+  outline: 3px solid color-mix(in srgb, var(--primary) 90%, #0000);
+  outline-offset: 3px;
   border-color: var(--primary);
 }
 
@@ -216,6 +239,42 @@ textarea:focus-visible {
   text-align: center;
   color: var(--muted);
   background: #fff;
+}
+
+/* Skip link: hidden until focused */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: #fff;
+  color: var(--fg);
+  padding: 8px 12px;
+  border: 2px solid var(--primary);
+  border-radius: 6px;
+  z-index: 1700; /* above sticky header and drawer */
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  position: fixed;
+  left: 12px;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+}
+
+/* On wider screens, position skip link to the right of the sidebar */
+@media (min-width: 641px) {
+  .skip-link:focus,
+  .skip-link:focus-visible {
+    left: calc(260px + 16px); /* sidebar width + gutter */
+    top: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .skip-link:focus,
+  .skip-link:focus-visible {
+    left: 12px;
+    top: calc(56px + env(safe-area-inset-top, 0px) + 8px); /* below sticky header */
+  }
 }
 
 /* Hidden by default; becomes visible on small screens */
@@ -255,12 +314,18 @@ small.muted {
   margin-top: 8px;
 }
 
+/* Hidden by default; mobile drawer will show this */
+.role-mobile { display: none; }
+
 .side-nav a {
   display: block;
   padding: 10px 12px;
   border-radius: 6px;
   color: var(--fg);
   text-decoration: none;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
 }
 
 .side-nav a:hover {
@@ -269,7 +334,7 @@ small.muted {
 }
 
 .side-nav a.active {
-  background: var(--primary);
+  background: var(--primary-strong);
   color: #fff;
 }
 
@@ -325,8 +390,8 @@ small.muted {
 }
 
 .tile:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .10);
 }
 
@@ -379,7 +444,7 @@ small.muted {
 }
 
 .tile-content a:hover {
-  color: var(--rose);
+  color: inherit;
   text-decoration: underline;
 }
 
@@ -488,6 +553,12 @@ small.muted {
     padding: 10px 12px;
     min-height: 44px;
   }
+  .role-mobile { display: block; padding: 8px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .role-mobile label { display: block; margin: 8px 0 4px; font-weight: 600; }
+  .role-mobile select { width: 100%; }
+  /* Hide the header role selector on mobile; use drawer version */
+  .sidebar label[for="role-select"] { display: none; }
+  #role-select { display: none; }
   .sidebar[data-open="true"] + .main {
     padding-top: calc(64px + env(safe-area-inset-top, 0px));
   }
@@ -549,4 +620,13 @@ small.muted {
   * { scroll-behavior: auto !important; }
   .side-nav { transition: none !important; }
   .tile:hover { transform: none !important; }
+}
+
+/* High-contrast / forced colors mode */
+@media (forced-colors: active) {
+  :root { forced-color-adjust: none; }
+  *:focus { outline: 2px solid Highlight !important; outline-offset: 2px !important; }
+  button, .btn, input, select, textarea { border-color: CanvasText !important; background: Canvas !important; color: CanvasText !important; }
+  .side-nav a.active { background: Highlight !important; color: HighlightText !important; }
+  .skip-link { border-color: Highlight !important; }
 }
