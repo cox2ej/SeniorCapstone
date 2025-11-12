@@ -226,8 +226,8 @@ a.btn:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
+  outline: 3px solid color-mix(in srgb, var(--primary) 90%, #0000);
+  outline-offset: 3px;
   border-color: var(--primary);
 }
 
@@ -312,12 +312,18 @@ small.muted {
   margin-top: 8px;
 }
 
+/* Hidden by default; mobile drawer will show this */
+.role-mobile { display: none; }
+
 .side-nav a {
   display: block;
   padding: 10px 12px;
   border-radius: 6px;
   color: var(--fg);
   text-decoration: none;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
 }
 
 .side-nav a:hover {
@@ -545,6 +551,12 @@ small.muted {
     padding: 10px 12px;
     min-height: 44px;
   }
+  .role-mobile { display: block; padding: 8px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .role-mobile label { display: block; margin: 8px 0 4px; font-weight: 600; }
+  .role-mobile select { width: 100%; }
+  /* Hide the header role selector on mobile; use drawer version */
+  .sidebar label[for="role-select"] { display: none; }
+  #role-select { display: none; }
   .sidebar[data-open="true"] + .main {
     padding-top: calc(64px + env(safe-area-inset-top, 0px));
   }
@@ -606,4 +618,13 @@ small.muted {
   * { scroll-behavior: auto !important; }
   .side-nav { transition: none !important; }
   .tile:hover { transform: none !important; }
+}
+
+/* High-contrast / forced colors mode */
+@media (forced-colors: active) {
+  :root { forced-color-adjust: none; }
+  *:focus { outline: 2px solid Highlight !important; outline-offset: 2px !important; }
+  button, .btn, input, select, textarea { border-color: CanvasText !important; background: Canvas !important; color: CanvasText !important; }
+  .side-nav a.active { background: Highlight !important; color: HighlightText !important; }
+  .skip-link { border-color: Highlight !important; }
 }

@@ -75,7 +75,7 @@ export default function Layout() {
       let focusables = []
       if (container) {
         focusables = Array.from(container.querySelectorAll(
-          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
         ))
         if (focusables.length) {
           focusables[0].focus()
@@ -94,7 +94,7 @@ export default function Layout() {
         if (e.key === 'Tab' && container) {
           const items = focusables.length
             ? focusables
-            : Array.from(container.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+            : Array.from(container.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
           if (!items.length) return
           const first = items[0]
           const last = items[items.length - 1]
@@ -144,6 +144,18 @@ export default function Layout() {
           Menu
         </button>
         <nav className="side-nav" id="primary-nav" aria-label="Primary" ref={navRef}>
+          <div className="role-mobile">
+            <label htmlFor="role-select-mobile">View as</label>
+            <select
+              id="role-select-mobile"
+              aria-label="View as"
+              value={role}
+              onChange={(e) => handleRoleChange(e.target.value)}
+            >
+              <option value="student">Student</option>
+              <option value="instructor">Instructor</option>
+            </select>
+          </div>
           {navLinks.map((link) => (
             <NavLink key={link.to} to={link.to} className={active} onClick={() => setNavOpen(false)}>{link.label}</NavLink>
           ))}
