@@ -5,17 +5,19 @@ export default function FeedbackHistory() {
   const { search } = useLocation()
   const params = new URLSearchParams(search)
   const assignmentId = params.get('assignmentId') || ''
-  const { currentUser, reviews, getAssignmentById, users } = useMockStore()
+  const { currentUser, reviews, selfAssessments, getAssignmentById, users } = useMockStore()
 
   const received = reviews.filter(r => {
     const a = getAssignmentById(r.assignmentId)
     return a && a.owner === currentUser
   })
   const given = reviews.filter(r => r.reviewer === currentUser)
+  const mySelf = selfAssessments.filter(sa => sa.owner === currentUser)
 
   const filteredReceived = assignmentId ? received.filter(r => r.assignmentId === assignmentId) : received
   const filteredGiven = assignmentId ? given.filter(r => r.assignmentId === assignmentId) : given
-  const none = assignmentId && (filteredReceived.length + filteredGiven.length === 0)
+  const filteredSelf = assignmentId ? mySelf.filter(sa => sa.assignmentId === assignmentId) : mySelf
+  const none = assignmentId && (filteredReceived.length + filteredGiven.length + filteredSelf.length === 0)
 
   return (
     <>
@@ -71,6 +73,29 @@ export default function FeedbackHistory() {
                     <div>Rating: {r.rating}</div>
                     {r.comments && <div>{r.comments}</div>}
                     <div className="muted">Owner: {a ? (users[a.owner]?.name || a.owner) : ''}</div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      <section className="tile" aria-labelledby="fh-self-title">
+        <h2 id="fh-self-title" className="tile-title">Your self-assessments</h2>
+        <div className="tile-content">
+          {filteredSelf.length === 0 ? (
+            <p>No self-assessments.</p>
+          ) : (
+            <ul>
+              {filteredSelf.map(sa => {
+                const a = getAssignmentById(sa.assignmentId)
+                const dt = sa.createdAt ? new Date(sa.createdAt).toLocaleString() : ''
+                return (
+                  <li key={sa.id}>
+                    <strong>{a?.title || 'Assignment'}</strong> {dt ? <span className="muted">({dt})</span> : null}
+                    <div>Rating: {sa.rating}</div>
+                    {sa.comments && <div>{sa.comments}</div>}
                   </li>
                 )
               })}

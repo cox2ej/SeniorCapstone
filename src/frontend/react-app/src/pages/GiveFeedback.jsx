@@ -7,11 +7,13 @@ export default function GiveFeedback() {
   const { search } = useLocation()
   const paramsIn = new URLSearchParams(search)
   const assignmentId = paramsIn.get('assignmentId') || ''
-  const { getAssignmentById, addReview, users, currentUser, assignments, addAssignmentFor } = useMockStore()
+  const { getAssignmentById, addReview, users, currentUser, assignments, matches, generateMatches, addAssignmentFor } = useMockStore()
   const assignment = assignmentId ? getAssignmentById(assignmentId) : null
-  const baseReviewQueue = useMemo(() => (
-    assignment ? [] : assignments.filter(a => a.owner !== currentUser)
-  ), [assignment, assignments, currentUser])
+  const baseReviewQueue = useMemo(() => {
+    if (assignment) return []
+    // Only show assignments that are explicitly matched to the current user.
+    return assignments.filter(a => matches[a.id] === currentUser)
+  }, [assignment, assignments, matches, currentUser])
   const [message, setMessage] = useState('')
   const [errors, setErrors] = useState([])
   const errorSummaryRef = useRef(null)
@@ -59,18 +61,17 @@ export default function GiveFeedback() {
   }
 
   function handleGenerateMatches() {
-    if (baseReviewQueue.length === 0) {
-      const other = Object.keys(users).find(id => id !== currentUser) || currentUser
+    const other = Object.keys(users).find(id => id !== currentUser) || currentUser
+    const available = assignments.some(a => a.owner === other)
+    if (!available) {
       const n = new Date()
       addAssignmentFor(other, {
         title: `Demo Assignment ${n.getHours()}:${String(n.getMinutes()).padStart(2, '0')}`,
         description: 'Auto-generated for matching demo.'
       })
-      setMatchMsg('Generated a demo assignment to review (mock).')
-    } else {
-      setQueue([...baseReviewQueue].sort(() => Math.random() - 0.5))
-      setMatchMsg('Matches generated (mock).')
     }
+    generateMatches()
+    setMatchMsg('Matches generated (mock).')
     setTimeout(() => setMatchMsg(''), 3000)
   }
 

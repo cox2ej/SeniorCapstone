@@ -7,7 +7,7 @@ export default function SelfAssessment() {
   const [errors, setErrors] = useState([])
   const errorSummaryRef = useRef(null)
   const navigate = useNavigate()
-  const { currentUser, getAssignmentsByOwner } = useMockStore()
+  const { currentUser, getAssignmentsByOwner, addSelfAssessment } = useMockStore()
   const myAssignments = getAssignmentsByOwner(currentUser)
 
   function onSubmit(e) {
@@ -16,6 +16,7 @@ export default function SelfAssessment() {
     const data = new FormData(form)
     const assignment = data.get('assignment') || ''
     const rating = data.get('rating') || ''
+    const comments = data.get('comments') || ''
     const errs = []
     if (!assignment) errs.push({ field: 'sa-assignment', message: 'Select an assignment' })
     const n = parseInt(String(rating), 10)
@@ -26,6 +27,7 @@ export default function SelfAssessment() {
       setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
       return
     }
+    addSelfAssessment({ assignmentId: assignment, rating: n, comments })
     navigate('/student-dashboard')
   }
 

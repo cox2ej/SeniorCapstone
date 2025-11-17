@@ -12,6 +12,8 @@ export function MockStoreProvider({ children }) {
       currentUser: localStorage.getItem('demoUser') || 'student1',
       assignments: [],
       reviews: [],
+      selfAssessments: [],
+      matches: {},
     }
   })
 
@@ -54,6 +56,30 @@ export function MockStoreProvider({ children }) {
     }))
   }
 
+  const addSelfAssessment = ({ assignmentId, rating, comments }) => {
+    const id = 'sa_' + Math.random().toString(36).slice(2, 9)
+    const createdAt = new Date().toISOString()
+    setStore(s => ({
+      ...s,
+      selfAssessments: [...s.selfAssessments, { id, assignmentId, rating: Number(rating), comments, owner: s.currentUser, createdAt }]
+    }))
+  }
+
+  const setMatch = (assignmentId, reviewerId) => {
+    setStore(s => ({ ...s, matches: { ...s.matches, [assignmentId]: reviewerId } }))
+  }
+
+  const generateMatches = () => {
+    setStore(s => {
+      const next = { ...s.matches }
+      for (const a of s.assignments) {
+        const other = Object.keys(users).find(id => id !== a.owner) || a.owner
+        next[a.id] = next[a.id] || other
+      }
+      return { ...s, matches: next }
+    })
+  }
+
   const resetDemo = () => {
     try {
       localStorage.removeItem('demoStore')
@@ -63,6 +89,8 @@ export function MockStoreProvider({ children }) {
       currentUser: 'student1',
       assignments: [],
       reviews: [],
+      selfAssessments: [],
+      matches: {},
     })
   }
 
@@ -72,13 +100,20 @@ export function MockStoreProvider({ children }) {
     setCurrentUser,
     assignments: store.assignments,
     reviews: store.reviews,
+    selfAssessments: store.selfAssessments,
+    matches: store.matches,
     addAssignment,
     addAssignmentFor,
     addReview,
+    addSelfAssessment,
+    setMatch,
+    generateMatches,
     resetDemo,
     getAssignmentsByOwner: (userId) => store.assignments.filter(a => a.owner === userId),
     getAssignmentsForReview: (userId) => store.assignments.filter(a => a.owner !== userId),
     getAssignmentById: (id) => store.assignments.find(a => a.id === id) || null,
+    getSelfAssessmentsByOwner: (userId) => store.selfAssessments.filter(sa => sa.owner === userId),
+    getAssignmentsMatchedFor: (userId) => store.assignments.filter(a => store.matches[a.id] === userId),
     getReviewsReceivedBy: (userId) => store.reviews.filter(r => {
       const a = store.assignments.find(x => x.id === r.assignmentId)
       return a && a.owner === userId
