@@ -36,6 +36,15 @@ export function MockStoreProvider({ children }) {
     }))
   }
 
+  const addAssignmentFor = (ownerId, { title, description }) => {
+    const id = 'a_' + Math.random().toString(36).slice(2, 9)
+    const createdAt = new Date().toISOString()
+    setStore(s => ({
+      ...s,
+      assignments: [...s.assignments, { id, title, description, owner: ownerId, createdAt }]
+    }))
+  }
+
   const addReview = ({ assignmentId, rating, comments }) => {
     const id = 'r_' + Math.random().toString(36).slice(2, 9)
     const createdAt = new Date().toISOString()
@@ -64,6 +73,7 @@ export function MockStoreProvider({ children }) {
     assignments: store.assignments,
     reviews: store.reviews,
     addAssignment,
+    addAssignmentFor,
     addReview,
     resetDemo,
     getAssignmentsByOwner: (userId) => store.assignments.filter(a => a.owner === userId),

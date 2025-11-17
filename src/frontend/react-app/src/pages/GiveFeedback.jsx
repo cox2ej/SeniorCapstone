@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useMockStore } from '../store/mockStore.jsx'
 
@@ -7,12 +7,20 @@ export default function GiveFeedback() {
   const { search } = useLocation()
   const paramsIn = new URLSearchParams(search)
   const assignmentId = paramsIn.get('assignmentId') || ''
-  const { getAssignmentById, addReview, users, currentUser, getAssignmentsForReview } = useMockStore()
+  const { getAssignmentById, addReview, users, currentUser, assignments, addAssignmentFor } = useMockStore()
   const assignment = assignmentId ? getAssignmentById(assignmentId) : null
-  const reviewQueue = assignment ? [] : getAssignmentsForReview(currentUser)
+  const baseReviewQueue = useMemo(() => (
+    assignment ? [] : assignments.filter(a => a.owner !== currentUser)
+  ), [assignment, assignments, currentUser])
   const [message, setMessage] = useState('')
   const [errors, setErrors] = useState([])
   const errorSummaryRef = useRef(null)
+  const [matchMsg, setMatchMsg] = useState('')
+  const [queue, setQueue] = useState(baseReviewQueue)
+
+  useEffect(() => {
+    setQueue(baseReviewQueue)
+  }, [baseReviewQueue])
 
   function onSubmit(e) {
     e.preventDefault()
@@ -50,6 +58,22 @@ export default function GiveFeedback() {
     setTimeout(() => setMessage(''), 3000)
   }
 
+  function handleGenerateMatches() {
+    if (baseReviewQueue.length === 0) {
+      const other = Object.keys(users).find(id => id !== currentUser) || currentUser
+      const n = new Date()
+      addAssignmentFor(other, {
+        title: `Demo Assignment ${n.getHours()}:${String(n.getMinutes()).padStart(2, '0')}`,
+        description: 'Auto-generated for matching demo.'
+      })
+      setMatchMsg('Generated a demo assignment to review (mock).')
+    } else {
+      setQueue([...baseReviewQueue].sort(() => Math.random() - 0.5))
+      setMatchMsg('Matches generated (mock).')
+    }
+    setTimeout(() => setMatchMsg(''), 3000)
+  }
+
   return (
     <>
       <h1 id="give-feedback-title">Give Feedback</h1>
@@ -84,14 +108,14 @@ export default function GiveFeedback() {
       )}
 
       {!assignment && (
-        <section className="tile" aria-labelledby="gf-queue-title">
-          <h2 id="gf-queue-title" className="tile-title">Assignments to review</h2>
+        <section className="tile" aria-labelledby="gf-match-title">
+          <h2 id="gf-match-title" className="tile-title">Peer Matching</h2>
           <div className="tile-content">
-            {reviewQueue.length === 0 ? (
+            {queue.length === 0 ? (
               <p>No assignments to review.</p>
             ) : (
               <ul>
-                {reviewQueue.map(a => (
+                {queue.map(a => (
                   <li key={a.id}>
                     <strong>{a.title}</strong>
                     {a.description ? <div className="muted">{a.description}</div> : null}
@@ -102,69 +126,53 @@ export default function GiveFeedback() {
                 ))}
               </ul>
             )}
+            <div className="actions" style={{ marginTop: 12 }}>
+              <button type="button" className="btn" onClick={handleGenerateMatches} aria-label="Generate matches (mock)">Generate matches (mock)</button>
+            </div>
+            {matchMsg && (
+              <p role="status" aria-live="polite" style={{ marginTop: 8 }}>{matchMsg}</p>
+            )}
+            <p className="muted" style={{ marginTop: 8 }}>Select an assignment above to start your review.</p>
           </div>
         </section>
       )}
 
-      <form onSubmit={onSubmit} noValidate aria-labelledby="give-feedback-title">
-        {assignment ? (
-          <>
-            <p id="assignment-context"><strong>Reviewing:</strong> {assignment.title} <span className="muted">(Owner: {users[assignment.owner]?.name || assignment.owner})</span></p>
-            {assignment.description ? (
-              <p>{assignment.description}</p>
-            ) : (
-              <p className="muted">No description provided.</p>
-            )}
-          </>
-        ) : (
-          <>
-            <label htmlFor="peer">Peer</label>
-            <select
-              id="peer"
-              name="peer"
-              required
-              defaultValue=""
-              aria-invalid={errors.some(e => e.field === 'peer') ? 'true' : 'false'}
-              aria-describedby={errors.some(e => e.field === 'peer') ? 'peer-error' : undefined}
-              className={errors.some(e => e.field === 'peer') ? 'input-error' : undefined}
-            >
-              <option value="" disabled>Select a peer</option>
-              <option>Peer A</option>
-              <option>Peer B</option>
-              <option>Peer C</option>
-            </select>
-            {errors.some(e => e.field === 'peer') && (
-              <p id="peer-error" className="help-error">{errors.find(e => e.field === 'peer')?.message}</p>
-            )}
-          </>
-        )}
+      {assignment && (
+        <form onSubmit={onSubmit} noValidate aria-labelledby="give-feedback-title">
+          <p id="assignment-context"><strong>Reviewing:</strong> {assignment.title} <span className="muted">(Owner: {users[assignment.owner]?.name || assignment.owner})</span></p>
+          {assignment.description ? (
+            <p>{assignment.description}</p>
+          ) : (
+            <p className="muted">No description provided.</p>
+          )}
 
-        <label htmlFor="rating">Rating (1-5)</label>
-        <input
-          id="rating"
-          name="rating"
-          type="number" min="1" max="5" step="1"
-          required
-          aria-describedby={`ratingHelp${errors.some(e => e.field === 'rating') ? ' rating-error' : ''}`}
-          aria-invalid={errors.some(e => e.field === 'rating') ? 'true' : 'false'}
-          className={errors.some(e => e.field === 'rating') ? 'input-error' : undefined}
-        />
-        <small id="ratingHelp" className="sr-only">Enter a whole number from 1 to 5.</small>
-        {errors.some(e => e.field === 'rating') && (
-          <p id="rating-error" className="help-error">{errors.find(e => e.field === 'rating')?.message}</p>
-        )}
+          <label htmlFor="rating">Rating (1-5)</label>
+          <input
+            id="rating"
+            name="rating"
+            type="number" min="1" max="5" step="1"
+            required
+            aria-describedby={`ratingHelp${errors.some(e => e.field === 'rating') ? ' rating-error' : ''}`}
+            aria-invalid={errors.some(e => e.field === 'rating') ? 'true' : 'false'}
+            className={errors.some(e => e.field === 'rating') ? 'input-error' : undefined}
+          />
+          <small id="ratingHelp" className="sr-only">Enter a whole number from 1 to 5.</small>
+          {errors.some(e => e.field === 'rating') && (
+            <p id="rating-error" className="help-error">{errors.find(e => e.field === 'rating')?.message}</p>
+          )}
 
-        <label htmlFor="comments">Comments</label>
-        <textarea id="comments" name="comments" rows={6} placeholder="Write constructive, specific, and actionable feedback" aria-describedby="commentsHelp" />
-        <small id="commentsHelp" className="sr-only">Provide constructive, specific, and actionable feedback.</small>
+          <label htmlFor="comments">Comments</label>
+          <textarea id="comments" name="comments" rows={6} placeholder="Write constructive, specific, and actionable feedback" aria-describedby="commentsHelp" />
+          <small id="commentsHelp" className="sr-only">Provide constructive, specific, and actionable feedback.</small>
 
-        <div className="actions">
-          <button className="primary" type="submit" aria-label="Submit feedback (mock)">Submit</button>
-          <button type="button" className="btn" onClick={handleSaveDraft} aria-label="Save draft (mock)">Save draft</button>
-          <Link to="/feedback-guidelines" className="btn" aria-label="View feedback guidelines">Guidelines</Link>
-          <Link to="/student-dashboard" className="btn" aria-label="Cancel and return to dashboard">Cancel</Link>
-        </div>
-      </form>
+          <div className="actions">
+            <button className="primary" type="submit" aria-label="Submit feedback (mock)">Submit</button>
+            <button type="button" className="btn" onClick={handleSaveDraft} aria-label="Save draft (mock)">Save draft</button>
+            <Link to="/feedback-guidelines" className="btn" aria-label="View feedback guidelines">Guidelines</Link>
+            <Link to="/student-dashboard" className="btn" aria-label="Cancel and return to dashboard">Cancel</Link>
+          </div>
+        </form>
+      )}
       <div id="gf-messages" className="sr-only" aria-live="polite">{message}</div>
     </>
   )
