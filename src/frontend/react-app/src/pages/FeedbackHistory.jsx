@@ -1,24 +1,29 @@
 import { useLocation } from 'react-router-dom'
-
-const entries = [
-  { id: 'a1', assignment: 'A', title: 'Assignment A', date: 'Oct 10', rating: 4, text: '"Clear explanations; consider adding examples for edge cases."' },
-  { id: 'b1', assignment: 'B', title: 'Assignment B', date: 'Oct 08', rating: 5, text: '"Great structure and detail; strong teamwork shown."' },
-  { id: 'c1', assignment: 'C', title: 'Assignment C', date: 'Oct 05', rating: 3, text: '"Good baseline; tighten scope and expand test coverage."' },
-  { id: 'a2', assignment: 'A', title: 'Assignment A', date: 'Oct 02', rating: 4, text: '"Helpful refactor suggestions; watch naming consistency."' },
-]
+import { useMockStore } from '../store/mockStore.jsx'
 
 export default function FeedbackHistory() {
   const { search } = useLocation()
   const params = new URLSearchParams(search)
-  const filter = params.get('assignment')
-  const filtered = filter ? entries.filter(e => e.assignment === filter) : entries
-  const none = filter && filtered.length === 0
+  const assignmentId = params.get('assignmentId') || ''
+  const { currentUser, reviews, selfAssessments, getAssignmentById, users } = useMockStore()
+
+  const received = reviews.filter(r => {
+    const a = getAssignmentById(r.assignmentId)
+    return a && a.owner === currentUser
+  })
+  const given = reviews.filter(r => r.reviewer === currentUser)
+  const mySelf = selfAssessments.filter(sa => sa.owner === currentUser)
+
+  const filteredReceived = assignmentId ? received.filter(r => r.assignmentId === assignmentId) : received
+  const filteredGiven = assignmentId ? given.filter(r => r.assignmentId === assignmentId) : given
+  const filteredSelf = assignmentId ? mySelf.filter(sa => sa.assignmentId === assignmentId) : mySelf
+  const none = assignmentId && (filteredReceived.length + filteredGiven.length + filteredSelf.length === 0)
 
   return (
     <>
-      <h1 id="fh-title">{filter ? `Feedback History — Assignment ${filter}` : 'Feedback History'}</h1>
+      <h1 id="fh-title">Feedback History</h1>
       <p id="fh-filter-note" className="sr-only">
-        {filter ? `Showing results for: Assignment ${filter}` : 'Showing results for: All assignments'}
+        {assignmentId ? `Showing results for assignment ${assignmentId}` : 'Showing results for: All assignments'}
       </p>
 
       <section className="tile" aria-labelledby="trend-heading">
@@ -28,21 +33,78 @@ export default function FeedbackHistory() {
         </div>
       </section>
 
-      <div className="tiles" aria-label="Feedback list">
-        {filtered.map(e => (
-          <div key={e.id} className="tile" aria-labelledby={`fh-${e.id}-title`}>
-            <h2 id={`fh-${e.id}-title`} className="tile-title">{e.title}</h2>
-            <div className="tile-subtitle">{e.date} • Rating {e.rating}</div>
-            <div className="tile-content">
-              <ul>
-                <li>{e.text}</li>
-              </ul>
-            </div>
-          </div>
-        ))}
-      </div>
+      <section className="tile" aria-labelledby="fh-rec-title">
+        <h2 id="fh-rec-title" className="tile-title">Reviews you've received</h2>
+        <div className="tile-content">
+          {filteredReceived.length === 0 ? (
+            <p>No received reviews.</p>
+          ) : (
+            <ul>
+              {filteredReceived.map(r => {
+                const a = getAssignmentById(r.assignmentId)
+                const dt = r.createdAt ? new Date(r.createdAt).toLocaleString() : ''
+                return (
+                  <li key={r.id}>
+                    <strong>{a?.title || 'Assignment'}</strong> {dt ? <span className="muted">({dt})</span> : null}
+                    <div>Rating: {r.rating}</div>
+                    {r.comments && <div>{r.comments}</div>}
+                    <div className="muted">Reviewer: {users[r.reviewer]?.name || r.reviewer}</div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      </section>
 
-      <p id="fh-empty" className={none ? '' : 'sr-only'}>No feedback found for this assignment.</p>
+      <section className="tile" aria-labelledby="fh-given-title">
+        <h2 id="fh-given-title" className="tile-title">Reviews you've given</h2>
+        <div className="tile-content">
+          {filteredGiven.length === 0 ? (
+            <p>No given reviews.</p>
+          ) : (
+            <ul>
+              {filteredGiven.map(r => {
+                const a = getAssignmentById(r.assignmentId)
+                const dt = r.createdAt ? new Date(r.createdAt).toLocaleString() : ''
+                return (
+                  <li key={r.id}>
+                    <strong>{a?.title || 'Assignment'}</strong> {dt ? <span className="muted">({dt})</span> : null}
+                    <div>Rating: {r.rating}</div>
+                    {r.comments && <div>{r.comments}</div>}
+                    <div className="muted">Owner: {a ? (users[a.owner]?.name || a.owner) : ''}</div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      <section className="tile" aria-labelledby="fh-self-title">
+        <h2 id="fh-self-title" className="tile-title">Your self-assessments</h2>
+        <div className="tile-content">
+          {filteredSelf.length === 0 ? (
+            <p>No self-assessments.</p>
+          ) : (
+            <ul>
+              {filteredSelf.map(sa => {
+                const a = getAssignmentById(sa.assignmentId)
+                const dt = sa.createdAt ? new Date(sa.createdAt).toLocaleString() : ''
+                return (
+                  <li key={sa.id}>
+                    <strong>{a?.title || 'Assignment'}</strong> {dt ? <span className="muted">({dt})</span> : null}
+                    <div>Rating: {sa.rating}</div>
+                    {sa.comments && <div>{sa.comments}</div>}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      <p id="fh-empty" className={none ? '' : 'sr-only'}>No feedback found for this filter.</p>
     </>
   )
 }

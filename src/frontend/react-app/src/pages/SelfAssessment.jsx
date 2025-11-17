@@ -1,11 +1,14 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useMockStore } from '../store/mockStore.jsx'
 
 export default function SelfAssessment() {
   const [message, setMessage] = useState('')
   const [errors, setErrors] = useState([])
   const errorSummaryRef = useRef(null)
   const navigate = useNavigate()
+  const { currentUser, getAssignmentsByOwner, addSelfAssessment } = useMockStore()
+  const myAssignments = getAssignmentsByOwner(currentUser)
 
   function onSubmit(e) {
     e.preventDefault()
@@ -13,6 +16,7 @@ export default function SelfAssessment() {
     const data = new FormData(form)
     const assignment = data.get('assignment') || ''
     const rating = data.get('rating') || ''
+    const comments = data.get('comments') || ''
     const errs = []
     if (!assignment) errs.push({ field: 'sa-assignment', message: 'Select an assignment' })
     const n = parseInt(String(rating), 10)
@@ -23,6 +27,7 @@ export default function SelfAssessment() {
       setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
       return
     }
+    addSelfAssessment({ assignmentId: assignment, rating: n, comments })
     navigate('/student-dashboard')
   }
 
@@ -76,10 +81,13 @@ export default function SelfAssessment() {
           className={errors.some(e => e.field === 'sa-assignment') ? 'input-error' : undefined}
         >
           <option value="" disabled>Select an assignment</option>
-          <option>Assignment A</option>
-          <option>Assignment B</option>
-          <option>Assignment C</option>
+          {myAssignments.map(a => (
+            <option key={a.id} value={a.id}>{a.title}</option>
+          ))}
         </select>
+        {myAssignments.length === 0 && (
+          <p className="muted">No assignments found. You can post one from My Feedback.</p>
+        )}
         {errors.some(e => e.field === 'sa-assignment') && (
           <p id="sa-assignment-error" className="help-error">{errors.find(e => e.field === 'sa-assignment')?.message}</p>
         )}
