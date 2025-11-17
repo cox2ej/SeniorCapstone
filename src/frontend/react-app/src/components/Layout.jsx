@@ -11,7 +11,7 @@ export default function Layout() {
   const navRef = useRef(null)
   const menuBtnRef = useRef(null)
   const prevFocusRef = useRef(null)
-  const { currentUser, setCurrentUser } = useMockStore()
+  const { currentUser, setCurrentUser, resetDemo } = useMockStore()
 
   useEffect(() => {
     localStorage.setItem('role', role)
@@ -146,6 +146,20 @@ export default function Layout() {
               <option value="student1">Student 1</option>
               <option value="student2">Student 2</option>
             </select>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                if (window.confirm('Clear demo data and reset users?')) {
+                  resetDemo()
+                  setNavOpen(false)
+                  navigate(homePath)
+                }
+              }}
+              aria-label="Reset demo data"
+            >
+              Reset demo data
+            </button>
           </>
         )}
         <button
@@ -184,6 +198,20 @@ export default function Layout() {
                 <option value="student1">Student 1</option>
                 <option value="student2">Student 2</option>
               </select>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  if (window.confirm('Clear demo data and reset users?')) {
+                    resetDemo()
+                    setNavOpen(false)
+                    navigate(homePath)
+                  }
+                }}
+                aria-label="Reset demo data"
+              >
+                Reset demo data
+              </button>
             </div>
           )}
           {navLinks.map((link) => (

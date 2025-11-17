@@ -45,6 +45,18 @@ export function MockStoreProvider({ children }) {
     }))
   }
 
+  const resetDemo = () => {
+    try {
+      localStorage.removeItem('demoStore')
+      localStorage.removeItem('demoUser')
+    } catch (e) { void e }
+    setStore({
+      currentUser: 'student1',
+      assignments: [],
+      reviews: [],
+    })
+  }
+
   const value = {
     users,
     currentUser: store.currentUser,
@@ -53,6 +65,7 @@ export function MockStoreProvider({ children }) {
     reviews: store.reviews,
     addAssignment,
     addReview,
+    resetDemo,
     getAssignmentsByOwner: (userId) => store.assignments.filter(a => a.owner === userId),
     getAssignmentsForReview: (userId) => store.assignments.filter(a => a.owner !== userId),
     getAssignmentById: (id) => store.assignments.find(a => a.id === id) || null,
