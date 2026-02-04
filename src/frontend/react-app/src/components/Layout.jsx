@@ -1,21 +1,59 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useMockStore } from '../store/mockStore.jsx'
+import { apiGet, isBackendEnabled } from '../api/client.js'
 
 export default function Layout() {
   const active = ({ isActive }) => (isActive ? 'active' : undefined)
   const navigate = useNavigate()
   const location = useLocation()
-  const [role, setRole] = useState(() => localStorage.getItem('role') || 'student')
   const [navOpen, setNavOpen] = useState(false)
   const navRef = useRef(null)
   const menuBtnRef = useRef(null)
   const prevFocusRef = useRef(null)
-  const { currentUser, setCurrentUser, resetDemo } = useMockStore()
+  const { currentUser, users, resetDemo } = useMockStore()
+  const backendEnabled = isBackendEnabled()
+  const [authUser, setAuthUser] = useState(null)
+  const [authError, setAuthError] = useState(null)
+  const userDisplayName = useMemo(() => {
+    if (backendEnabled && authUser) {
+      return authUser.display_name
+        || authUser.full_name
+        || authUser.username
+        || authUser.email
+        || 'Signed-in user'
+    }
+    return users[currentUser]?.name || currentUser || 'Demo user'
+  }, [backendEnabled, authUser, users, currentUser])
 
   useEffect(() => {
-    localStorage.setItem('role', role)
-  }, [role])
+    if (!backendEnabled) {
+      setAuthUser(null)
+      setAuthError(null)
+      return undefined
+    }
+
+    let cancelled = false
+    async function fetchMe() {
+      setAuthError(null)
+      try {
+        const data = await apiGet('/users/me/')
+        if (!cancelled) setAuthUser(data)
+      } catch (err) {
+        if (!cancelled) {
+          if (err?.status === 401) {
+            setAuthUser(null)
+            setAuthError(null)
+          } else {
+            setAuthError(err)
+          }
+        }
+      }
+    }
+
+    fetchMe()
+    return () => { cancelled = true }
+  }, [backendEnabled])
 
   const studentLinks = [
     { to: '/student-dashboard', label: 'Dashboard' },
@@ -41,13 +79,13 @@ export default function Layout() {
     { to: '/about-help', label: 'Help' },
   ]
 
-  const homePath = role === 'student' ? '/student-dashboard' : '/instructor-dashboard'
-  const navLinks = role === 'student' ? [...studentLinks, ...commonLinks] : [...instructorLinks, ...commonLinks]
-
-  const handleRoleChange = (newRole) => {
-    setRole(newRole)
-    navigate(newRole === 'student' ? '/student-dashboard' : '/instructor-dashboard')
-  }
+  const resolvedRole = useMemo(() => {
+    if (backendEnabled && authUser?.role) return authUser.role
+    return 'student'
+  }, [backendEnabled, authUser])
+  const viewingInstructor = resolvedRole === 'instructor' || resolvedRole === 'admin'
+  const homePath = viewingInstructor ? '/instructor-dashboard' : '/student-dashboard'
+  const navLinks = viewingInstructor ? [...instructorLinks, ...commonLinks] : [...studentLinks, ...commonLinks]
 
   // Close mobile menu on route change and when viewport grows
   useEffect(() => {
@@ -124,43 +162,30 @@ export default function Layout() {
     <div className="layout">
       <aside className="sidebar" aria-label="Sidebar" data-open={navOpen ? 'true' : 'false'}>
         <NavLink to={homePath} className="brand-large" onClick={() => setNavOpen(false)}>Peer Feedback App</NavLink>
-        <label htmlFor="role-select">View as</label>
-        <select
-          id="role-select"
-          aria-label="View as"
-          value={role}
-          onChange={(e) => handleRoleChange(e.target.value)}
-        >
-          <option value="student">Student</option>
-          <option value="instructor">Instructor</option>
-        </select>
-        {role === 'student' && (
-          <>
-            <label htmlFor="user-select">User</label>
-            <select
-              id="user-select"
-              aria-label="User"
-              value={currentUser}
-              onChange={(e) => setCurrentUser(e.target.value)}
-            >
-              <option value="student1">Student 1</option>
-              <option value="student2">Student 2</option>
-            </select>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                if (window.confirm('Clear demo data and reset users?')) {
-                  resetDemo()
-                  setNavOpen(false)
-                  navigate(homePath)
-                }
-              }}
-              aria-label="Reset demo data"
-            >
-              Reset demo data
-            </button>
-          </>
+        <p className="muted" style={{ marginTop: 12 }}>
+          Logged in as <strong>{userDisplayName}</strong>
+          {authError && backendEnabled && (
+            <>
+              <br />
+              <span className="error-text">Unable to confirm session.</span>
+            </>
+          )}
+        </p>
+        {!backendEnabled && (
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              if (window.confirm('Clear demo data and reset users?')) {
+                resetDemo()
+                setNavOpen(false)
+                navigate(homePath)
+              }
+            }}
+            aria-label="Reset demo data"
+          >
+            Reset demo data
+          </button>
         )}
         <button
           type="button"
@@ -174,30 +199,9 @@ export default function Layout() {
           Menu
         </button>
         <nav className="side-nav" id="primary-nav" aria-label="Primary" ref={navRef}>
-          <div className="role-mobile">
-            <label htmlFor="role-select-mobile">View as</label>
-            <select
-              id="role-select-mobile"
-              aria-label="View as"
-              value={role}
-              onChange={(e) => handleRoleChange(e.target.value)}
-            >
-              <option value="student">Student</option>
-              <option value="instructor">Instructor</option>
-            </select>
-          </div>
-          {role === 'student' && (
-            <div className="role-mobile">
-              <label htmlFor="user-select-mobile">User</label>
-              <select
-                id="user-select-mobile"
-                aria-label="User"
-                value={currentUser}
-                onChange={(e) => setCurrentUser(e.target.value)}
-              >
-                <option value="student1">Student 1</option>
-                <option value="student2">Student 2</option>
-              </select>
+          <div className="role-mobile" style={{ marginTop: 12 }}>
+            <p className="muted" style={{ marginBottom: 8 }}>Logged in as <strong>{userDisplayName}</strong></p>
+            {!backendEnabled && (
               <button
                 type="button"
                 className="btn"
@@ -212,8 +216,8 @@ export default function Layout() {
               >
                 Reset demo data
               </button>
-            </div>
-          )}
+            )}
+          </div>
           {navLinks.map((link) => (
             <NavLink key={link.to} to={link.to} className={active} onClick={() => setNavOpen(false)}>{link.label}</NavLink>
           ))}
