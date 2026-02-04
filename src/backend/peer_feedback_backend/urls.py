@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import include, path
 from rest_framework import routers
 
-from accounts.views import UserViewSet
+from accounts.views import CsrfTokenView, LoginView, LogoutView, UserViewSet
 from courses.views import AssignmentViewSet, CourseViewSet, EnrollmentViewSet
 from feedback.views import (
   AssignmentReviewerViewSet,
@@ -40,4 +40,7 @@ router.register(r'analytics', FeedbackAnalyticsViewSet, basename='analytics')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
+    path('api/auth/csrf/', CsrfTokenView.as_view(), name='csrf-token'),
+    path('api/auth/login/', LoginView.as_view(), name='login'),
+    path('api/auth/logout/', LogoutView.as_view(), name='logout'),
 ]

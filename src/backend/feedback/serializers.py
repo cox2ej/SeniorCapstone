@@ -16,15 +16,18 @@ class AssignmentReviewerSerializer(serializers.ModelSerializer):
 
 
 class FeedbackSubmissionSerializer(serializers.ModelSerializer):
+  reviewer = serializers.PrimaryKeyRelatedField(queryset=AssignmentReviewer.objects.all(), required=False, allow_null=True)
   reviewer_alias = serializers.CharField(source='reviewer.alias', read_only=True)
+  assignment_detail = AssignmentSerializer(source='assignment', read_only=True)
+  reviewer_user = UserSerializer(source='reviewer.user', read_only=True)
 
   class Meta:
     model = FeedbackSubmission
     fields = [
-      'id', 'assignment', 'reviewer', 'reviewer_alias', 'rating', 'comments',
-      'rubric_scores', 'status', 'submitted_at', 'updated_at'
+      'id', 'assignment', 'reviewer', 'assignment_detail', 'reviewer_alias', 'reviewer_user',
+      'rating', 'comments', 'rubric_scores', 'status', 'submitted_at', 'updated_at'
     ]
-    read_only_fields = ['id', 'reviewer_alias', 'submitted_at', 'updated_at']
+    read_only_fields = ['id', 'assignment_detail', 'reviewer_alias', 'reviewer_user', 'submitted_at', 'updated_at']
 
 
 class SelfAssessmentSerializer(serializers.ModelSerializer):

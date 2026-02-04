@@ -25,6 +25,7 @@ import Registration from './pages/Registration.jsx'
 import ForgotPassword from './pages/ForgotPassword.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
 import { MockStoreProvider } from './store/mockStore.jsx'
+import { isBackendEnabled, apiGet, apiPost } from './api/client.js'
 
 function SkipLink() {
   return (
@@ -70,19 +71,84 @@ function Placeholder({ title }) {
 }
 
 function LogoutCard() {
+  const backendEnabled = isBackendEnabled()
+  const [message, setMessage] = useState(backendEnabled ? 'Signing you out…' : 'You have been logged out.')
+
+  useEffect(() => {
+    if (!backendEnabled) return undefined
+    let cancelled = false
+    async function signOut() {
+      try {
+        await apiPost('/auth/logout/', {})
+        if (!cancelled) setMessage('You have been logged out.')
+      } catch (error) {
+        if (!cancelled) {
+          const detail = error?.responseText || error?.message || 'Unable to confirm logout.'
+          setMessage(detail)
+        }
+      }
+    }
+    signOut()
+    return () => { cancelled = true }
+  }, [backendEnabled])
+
   return (
     <main id="main-content" className="auth-shell" tabIndex="-1">
       <section className="auth-card" aria-labelledby="logout-title">
         <h1 id="logout-title">Session timed out</h1>
-        <p>You’ve been logged out due to inactivity.</p>
+        <p>{message}</p>
         <div className="actions">
           <Link to="/login" className="btn primary" aria-label="Go to Login">Log in again</Link>
           <Link to="/" className="btn" aria-label="Return to Home">Home</Link>
         </div>
-        <p><small className="muted">Prototype only. No authentication occurs.</small></p>
+        <p><small className="muted">Please sign in again to continue.</small></p>
       </section>
     </main>
   )
+}
+
+function RequireAuth({ children }) {
+  const [authState, setAuthState] = useState({ checked: false, authenticated: false })
+  const backendEnabled = isBackendEnabled()
+
+  useEffect(() => {
+    let cancelled = false
+    async function check() {
+      if (!backendEnabled) {
+        setAuthState({ checked: true, authenticated: true })
+        return
+      }
+      try {
+        await apiGet('/users/me/')
+        if (!cancelled) setAuthState({ checked: true, authenticated: true })
+      } catch (error) {
+        if (!cancelled) {
+          if (error?.status !== 401) {
+            console.warn('Unable to verify session', error)
+          }
+          setAuthState({ checked: true, authenticated: false })
+        }
+      }
+    }
+    check()
+    return () => { cancelled = true }
+  }, [backendEnabled])
+
+  if (!authState.checked) {
+    return (
+      <main id="main-content" className="auth-shell" tabIndex="-1">
+        <section className="auth-card" aria-busy="true">
+          <h1>Checking session…</h1>
+        </section>
+      </main>
+    )
+  }
+
+  if (!authState.authenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
 }
 
 export default function App() {
@@ -98,7 +164,7 @@ export default function App() {
           <Route path="/registration" element={<Registration />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route element={<Layout /> }>
+          <Route element={<RequireAuth><Layout /></RequireAuth>}>
             <Route path="/student-dashboard" element={<StudentDashboard />} />
             <Route path="/instructor-dashboard" element={<InstructorDashboard />} />
             <Route path="/give-feedback" element={<GiveFeedback />} />

@@ -48,7 +48,11 @@ async function request(path, { method = 'GET', data, headers = {}, ...rest } = {
   const response = await fetch(url, options)
   if (!response.ok) {
     const text = await response.text()
-    throw new Error(`API ${method} ${url} failed: ${response.status} ${text}`)
+    const error = new Error(`API ${method} ${url} failed: ${response.status} ${text}`)
+    error.status = response.status
+    error.responseText = text
+    error.url = url
+    throw error
   }
 
   if (response.status === 204) return null
