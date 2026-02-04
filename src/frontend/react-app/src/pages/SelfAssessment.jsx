@@ -1,16 +1,25 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMockStore } from '../store/mockStore.jsx'
+import { useAssignmentsData } from '../hooks/useAssignmentsData.js'
+import { useSelfAssessments } from '../hooks/useSelfAssessments.js'
 
 export default function SelfAssessment() {
   const [message, setMessage] = useState('')
   const [errors, setErrors] = useState([])
   const errorSummaryRef = useRef(null)
   const navigate = useNavigate()
-  const { currentUser, getAssignmentsByOwner, addSelfAssessment } = useMockStore()
-  const myAssignments = getAssignmentsByOwner(currentUser)
+  const { currentUser, getAssignmentsByOwner } = useMockStore()
+  const { assignments, backendEnabled, loading: assignmentsLoading, error: assignmentsError } = useAssignmentsData()
+  const { submit: submitAssessment, backendEnabled: assessmentsBackendEnabled, loading: saLoading, error: saError } = useSelfAssessments()
+  const usingBackend = backendEnabled && assessmentsBackendEnabled
 
-  function onSubmit(e) {
+  const myAssignments = useMemo(() => {
+    if (usingBackend) return assignments
+    return getAssignmentsByOwner(currentUser)
+  }, [usingBackend, assignments, getAssignmentsByOwner, currentUser])
+
+  async function onSubmit(e) {
     e.preventDefault()
     const form = e.currentTarget
     const data = new FormData(form)
@@ -27,8 +36,14 @@ export default function SelfAssessment() {
       setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
       return
     }
-    addSelfAssessment({ assignmentId: assignment, rating: n, comments })
-    navigate('/student-dashboard')
+
+    try {
+      await submitAssessment({ assignmentId: assignment, rating: n, comments })
+      navigate('/student-dashboard')
+    } catch (err) {
+      setErrors([{ field: 'sa-rating', message: err.message || 'Unable to submit self-assessment.' }])
+      setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
+    }
   }
 
   function handleSaveDraft() {
@@ -88,6 +103,10 @@ export default function SelfAssessment() {
         {myAssignments.length === 0 && (
           <p className="muted">No assignments found. You can post one from My Feedback.</p>
         )}
+        {assignmentsLoading && usingBackend && <p className="muted">Loading assignments…</p>}
+        {assignmentsError && usingBackend && (
+          <p className="help-error" role="alert">Unable to load assignments: {assignmentsError.message}</p>
+        )}
         {errors.some(e => e.field === 'sa-assignment') && (
           <p id="sa-assignment-error" className="help-error">{errors.find(e => e.field === 'sa-assignment')?.message}</p>
         )}
@@ -112,12 +131,15 @@ export default function SelfAssessment() {
         <small id="saCommentsHelp" className="sr-only">Provide specific examples and concrete next steps.</small>
 
         <div className="actions">
-          <button className="btn primary" type="submit" aria-label="Submit self-assessment (mock)">Submit</button>
+          <button className="btn primary" type="submit" aria-label="Submit self-assessment">{saLoading && usingBackend ? 'Submitting…' : 'Submit'}</button>
           <button type="button" className="btn" onClick={handleSaveDraft} aria-label="Save draft (mock)">Save draft</button>
           <Link to="/feedback-guidelines" className="btn" aria-label="View feedback guidelines">Guidelines</Link>
           <Link to="/student-dashboard" className="btn" aria-label="Cancel and return to dashboard">Cancel</Link>
         </div>
       </form>
+      {saError && usingBackend && (
+        <p className="error-text" role="alert">{saError.message}</p>
+      )}
       <div id="sa-messages" className="sr-only" aria-live="polite">{message}</div>
     </>
   )

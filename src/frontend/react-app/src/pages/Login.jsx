@@ -1,11 +1,50 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { apiGet, apiPost, isBackendEnabled } from '../api/client.js'
+
+const extractMessage = (error) => {
+  if (error?.responseText) {
+    try {
+      const parsed = JSON.parse(error.responseText)
+      if (parsed?.detail) return parsed.detail
+    } catch { /* ignore */ }
+    return error.responseText
+  }
+  return error?.message || 'Unable to complete request.'
+}
 
 export default function Login() {
   const [showPw, setShowPw] = useState(false)
   const [errors, setErrors] = useState([])
+  const [formError, setFormError] = useState('')
+  const [loading, setLoading] = useState(false)
   const errorSummaryRef = useRef(null)
   const navigate = useNavigate()
+  const backendEnabled = isBackendEnabled()
+
+  const redirectAfterLogin = useCallback((user) => {
+    const role = user?.role
+    const path = role === 'instructor' || role === 'admin' ? '/instructor-dashboard' : '/student-dashboard'
+    navigate(path, { replace: true })
+  }, [navigate])
+
+  useEffect(() => {
+    if (!backendEnabled) return undefined
+    let cancelled = false
+    async function checkSession() {
+      try {
+        const user = await apiGet('/users/me/')
+        if (!cancelled) redirectAfterLogin(user)
+      } catch (error) {
+        if (!cancelled && error?.status !== 401) {
+          const detail = extractMessage(error)
+          setFormError(detail)
+        }
+      }
+    }
+    checkSession()
+    return () => { cancelled = true }
+  }, [backendEnabled, redirectAfterLogin])
 
   function onSubmit(e) {
     e.preventDefault()
@@ -17,10 +56,34 @@ export default function Login() {
     if (!password) errs.push({ field: 'password', message: 'Enter your password' })
     if (errs.length) {
       setErrors(errs)
+      setFormError('')
       setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
       return
     }
-    navigate('/student-dashboard')
+
+    if (!backendEnabled) {
+      navigate('/student-dashboard')
+      return
+    }
+
+    async function login() {
+      setLoading(true)
+      setErrors([])
+      setFormError('')
+      try {
+        await apiGet('/auth/csrf/')
+        const user = await apiPost('/auth/login/', { username, password })
+        redirectAfterLogin(user)
+      } catch (error) {
+        const detail = extractMessage(error)
+        setFormError(detail)
+        setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void login()
   }
 
   const hasError = (field) => errors.some(e => e.field === field)
@@ -32,13 +95,16 @@ export default function Login() {
         <h1 id="login-title">Login</h1>
         <p>Prototype login. This will take you into the app.</p>
 
-        {errors.length > 0 && (
+        {(errors.length > 0 || formError) && (
           <div className="error-summary" role="alert" aria-labelledby="login-error-summary-title" tabIndex="-1" ref={errorSummaryRef}>
             <h2 id="login-error-summary-title">There is a problem</h2>
             <ul>
               {errors.map(e => (
                 <li key={e.field}><a href={`#${e.field}`}>{e.message}</a></li>
               ))}
+              {formError && (
+                <li key="form-error">{formError}</li>
+              )}
             </ul>
           </div>
         )}
@@ -88,9 +154,13 @@ export default function Login() {
           )}
 
           <div className="actions">
-            <button className="primary" type="submit" aria-label="Sign in (mock)">Sign in</button>
+            <button className="primary" type="submit" aria-label="Sign in" disabled={loading}>
+              {loading ? 'Signing in…' : 'Sign in'}
+            </button>
             <Link to="/" className="btn" aria-label="Return to home">Home</Link>
-            <button type="button" className="btn" aria-label="Sign in with SSO (mock)" onClick={() => navigate('/student-dashboard')}>Use SSO (mock)</button>
+            {!backendEnabled && (
+              <button type="button" className="btn" aria-label="Sign in with SSO (mock)" onClick={() => navigate('/student-dashboard')}>Use SSO (mock)</button>
+            )}
           </div>
           <div className="actions">
             <Link to="/forgot-password">Forgot password?</Link>
@@ -99,7 +169,11 @@ export default function Login() {
         </form>
 
         <p><small className="muted">By continuing, you agree to our <a href="#">Terms &amp; Privacy</a>.</small></p>
-        <p><small className="muted">No authentication is performed in this prototype.</small></p>
+        {backendEnabled ? (
+          <p><small className="muted">Session cookies are used for authentication.</small></p>
+        ) : (
+          <p><small className="muted">Backend is disabled; authentication is mocked.</small></p>
+        )}
         <div id="form-messages" className="sr-only" aria-live="polite"></div>
       </section>
     </main>

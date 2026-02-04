@@ -1,19 +1,39 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMockStore } from '../store/mockStore.js'
+import { useAssignmentsData } from '../hooks/useAssignmentsData.js'
 
 export default function MyFeedback() {
-  const { currentUser, getReviewsReceivedBy, getAssignmentById, users, addAssignment } = useMockStore()
+  const { currentUser, getReviewsReceivedBy, getAssignmentById, users } = useMockStore()
+  const { backendEnabled, assignments, loading, error, createAssignment } = useAssignmentsData()
   const [title, setTitle] = useState('')
   const [desc, setDesc] = useState('')
+  const [statusMessage, setStatusMessage] = useState('')
+  const [submitError, setSubmitError] = useState('')
   const reviews = getReviewsReceivedBy(currentUser)
 
-  function onPost(e) {
+  const assignmentLookup = useMemo(() => {
+    if (!backendEnabled) return null
+    return assignments.reduce((acc, item) => {
+      acc[item.id] = item
+      return acc
+    }, {})
+  }, [backendEnabled, assignments])
+
+  async function onPost(e) {
     e.preventDefault()
-    if (!title.trim()) return
-    addAssignment({ title: title.trim(), description: desc.trim() })
-    setTitle('')
-    setDesc('')
+    setSubmitError('')
+    setStatusMessage('')
+    const trimmed = title.trim()
+    if (!trimmed) return
+    try {
+      await createAssignment({ title: trimmed, description: desc.trim() })
+      setTitle('')
+      setDesc('')
+      setStatusMessage(backendEnabled ? 'Assignment submitted to backend.' : 'Assignment saved locally.')
+    } catch (err) {
+      setSubmitError(err.message || 'Unable to save assignment.')
+    }
   }
 
   return (
@@ -30,6 +50,14 @@ export default function MyFeedback() {
             <div className="actions">
               <button className="primary" type="submit">Post</button>
             </div>
+            <div role="status" aria-live="polite">
+              {loading && backendEnabled && <p className="muted">Loading assignments…</p>}
+              {statusMessage && <p className="success-text">{statusMessage}</p>}
+              {submitError && <p className="error-text" role="alert">{submitError}</p>}
+            </div>
+            {error && backendEnabled && (
+              <p className="error-text" role="alert">Failed to load assignments: {error.message}</p>
+            )}
           </form>
         </div>
       </section>
@@ -41,10 +69,12 @@ export default function MyFeedback() {
           ) : (
             <ul>
               {reviews.map(r => {
-                const a = getAssignmentById(r.assignmentId)
+                const assignment = backendEnabled
+                  ? assignmentLookup?.[r.assignmentId] || getAssignmentById(r.assignmentId)
+                  : getAssignmentById(r.assignmentId)
                 return (
                   <li key={r.id}>
-                    <strong>{a?.title || 'Assignment'}</strong>
+                    <strong>{assignment?.title || 'Assignment'}</strong>
                     <div>Rating: {r.rating}</div>
                     {r.comments && <div>Comment: {r.comments}</div>}
                     <div className="muted">Reviewer: {users[r.reviewer]?.name || r.reviewer}</div>
