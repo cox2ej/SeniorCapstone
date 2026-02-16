@@ -1,6 +1,6 @@
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
-from rest_framework import status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -86,6 +86,7 @@ class AssignmentReviewerViewSet(viewsets.ReadOnlyModelViewSet):
 class FeedbackSubmissionViewSet(viewsets.ModelViewSet):
   queryset = FeedbackSubmission.objects.select_related('assignment', 'assignment__created_by', 'reviewer', 'reviewer__user').all()
   serializer_class = FeedbackSubmissionSerializer
+  permission_classes = [permissions.IsAuthenticated]
 
   def get_queryset(self):
     qs = super().get_queryset()
@@ -111,6 +112,10 @@ class FeedbackSubmissionViewSet(viewsets.ModelViewSet):
     reviewer = serializer.validated_data.get('reviewer')
     if reviewer is None:
       reviewer, _ = AssignmentReviewer.objects.get_or_create(assignment=assignment, user=self.request.user)
+    elif reviewer.user_id and reviewer.user_id != self.request.user.id:
+      raise permissions.PermissionDenied('This reviewer slot belongs to another user.')
+    if assignment.created_by_id == self.request.user.id:
+      raise permissions.PermissionDenied('You cannot review your own assignment.')
     serializer.save(reviewer=reviewer)
 
 
