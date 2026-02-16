@@ -29,6 +29,31 @@ class FeedbackSubmissionSerializer(serializers.ModelSerializer):
     ]
     read_only_fields = ['id', 'assignment_detail', 'reviewer_alias', 'reviewer_user', 'submitted_at', 'updated_at']
 
+  def validate_rating(self, value):
+    if value < 1 or value > 5:
+      raise serializers.ValidationError('Rating must be between 1 and 5.')
+    return value
+
+  def validate(self, attrs):
+    assignment = attrs.get('assignment') or getattr(self.instance, 'assignment', None)
+    reviewer = attrs.get('reviewer') or getattr(self.instance, 'reviewer', None)
+    request = self.context.get('request')
+    user = getattr(request, 'user', None)
+
+    if assignment is None:
+      raise serializers.ValidationError({'assignment': 'Assignment is required.'})
+
+    if reviewer:
+      if reviewer.assignment_id != assignment.id:
+        raise serializers.ValidationError({'reviewer': 'Reviewer does not belong to this assignment.'})
+      if reviewer.user_id and user and reviewer.user_id != user.id:
+        raise serializers.ValidationError({'reviewer': 'This reviewer slot belongs to another user.'})
+
+    if user and assignment.created_by_id == user.id:
+      raise serializers.ValidationError({'assignment': 'You cannot review your own assignment.'})
+
+    return attrs
+
 
 class SelfAssessmentSerializer(serializers.ModelSerializer):
   owner = UserSerializer(read_only=True)
