@@ -22,6 +22,7 @@ from accounts.views import CsrfTokenView, LoginView, LogoutView, UserViewSet
 from courses.views import AssignmentViewSet, CourseViewSet, EnrollmentViewSet
 from feedback.views import (
   AssignmentReviewerViewSet,
+  DashboardSummaryView,
   FeedbackAnalyticsViewSet,
   FeedbackSubmissionViewSet,
   SelfAssessmentViewSet,
@@ -43,4 +44,5 @@ urlpatterns = [
     path('api/auth/csrf/', CsrfTokenView.as_view(), name='csrf-token'),
     path('api/auth/login/', LoginView.as_view(), name='login'),
     path('api/auth/logout/', LogoutView.as_view(), name='logout'),
+    path('api/dashboard/summary/', DashboardSummaryView.as_view(), name='dashboard-summary'),
 ]
