@@ -27,6 +27,7 @@ from feedback.views import (
   FeedbackSubmissionViewSet,
   SelfAssessmentViewSet,
 )
+from notifications.views import NotificationViewSet
 
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
@@ -37,6 +38,7 @@ router.register(r'assignment-reviewers', AssignmentReviewerViewSet, basename='as
 router.register(r'feedback', FeedbackSubmissionViewSet, basename='feedback')
 router.register(r'self-assessments', SelfAssessmentViewSet, basename='self-assessment')
 router.register(r'analytics', FeedbackAnalyticsViewSet, basename='analytics')
+router.register(r'notifications', NotificationViewSet, basename='notification')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

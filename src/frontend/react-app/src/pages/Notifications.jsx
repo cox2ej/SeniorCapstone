@@ -1,43 +1,68 @@
-import { useMockStore } from '../store/mockStore.jsx'
+import { useMemo } from 'react'
+
+import { useNotifications } from '../hooks/useNotifications.js'
+
+const formatDate = (value) => {
+  if (!value) return ''
+  try {
+    const date = new Date(value)
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+  } catch {
+    return ''
+  }
+}
 
 export default function Notifications() {
-  const { currentUser, assignments, reviews, users, getAssignmentById } = useMockStore()
-  const events = []
-  for (const a of assignments) {
-    events.push({
-      id: 'assn_' + a.id,
-      date: a.createdAt ? new Date(a.createdAt).getTime() : 0,
-      text: `Assignment posted by ${users[a.owner]?.name || a.owner}: ${a.title}`,
-    })
-  }
-  for (const r of reviews) {
-    const a = getAssignmentById(r.assignmentId)
-    if (!a) continue
-    const isReceived = a.owner === currentUser
-    const who = users[r.reviewer]?.name || r.reviewer
-    events.push({
-      id: 'rev_' + r.id,
-      date: r.createdAt ? new Date(r.createdAt).getTime() : 0,
-      text: isReceived
-        ? `New review received on ${a.title} by ${who} — Rating ${r.rating}`
-        : `You reviewed ${users[a.owner]?.name || a.owner}'s ${a.title} — Rating ${r.rating}`,
-    })
-  }
-  events.sort((a, b) => b.date - a.date)
-  const recent = events.slice(0, 6)
+  const { notifications, loading, error, refresh, markRead, markAllRead } = useNotifications()
+
+  const unreadCount = useMemo(() => notifications.filter(n => !n.is_read).length, [notifications])
 
   return (
     <>
-      <h1>Notifications Center</h1>
+      <div className="header-row">
+        <div>
+          <h1>Notifications Center</h1>
+          <p className="muted">Stay up to date with assignment posts and review activity.</p>
+        </div>
+        <div className="actions" style={{ gap: 8 }}>
+          <button type="button" className="btn" onClick={refresh} disabled={loading} aria-label="Refresh notifications">
+            {loading ? 'Refreshing…' : 'Refresh'}
+          </button>
+          <button
+            type="button"
+            className="btn"
+            onClick={markAllRead}
+            disabled={loading || unreadCount === 0}
+            aria-label="Mark all notifications as read"
+          >
+            Mark all read
+          </button>
+        </div>
+      </div>
+      {error && (
+        <p role="alert" className="error-text">Unable to load notifications. Please try again.</p>
+      )}
       <section className="tile" aria-labelledby="nt-recent">
-        <h2 id="nt-recent" className="tile-title">Recent</h2>
+        <h2 id="nt-recent" className="tile-title">
+          {loading ? 'Recent notifications (loading…)': 'Recent notifications'}
+        </h2>
         <div className="tile-content">
-          {recent.length === 0 ? (
-            <p>No recent notifications.</p>
+          {!loading && notifications.length === 0 ? (
+            <p>No notifications yet.</p>
           ) : (
-            <ul>
-              {recent.map(ev => (
-                <li key={ev.id}>{ev.text}</li>
+            <ul className="notification-list">
+              {notifications.map(item => (
+                <li key={item.id} className={item.is_read ? 'notification read' : 'notification'}>
+                  <div>
+                    <div>{item.message}</div>
+                    <small className="muted">{formatDate(item.created_at)}</small>
+                  </div>
+                  {!item.is_read && (
+                    <button type="button" className="btn link" onClick={() => markRead(item.id)}>
+                      Mark read
+                    </button>
+                  )}
+                </li>
               ))}
             </ul>
           )}
