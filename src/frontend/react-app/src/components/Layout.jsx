@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useMockStore } from '../store/mockStore.jsx'
+import { useNotifications } from '../hooks/useNotifications.js'
 import { apiGet, isBackendEnabled } from '../api/client.js'
 
 export default function Layout() {
@@ -12,6 +13,7 @@ export default function Layout() {
   const menuBtnRef = useRef(null)
   const prevFocusRef = useRef(null)
   const { currentUser, users, resetDemo } = useMockStore()
+  const { notifications } = useNotifications()
   const backendEnabled = isBackendEnabled()
   const [authUser, setAuthUser] = useState(null)
   const [authError, setAuthError] = useState(null)
@@ -86,6 +88,8 @@ export default function Layout() {
   const viewingInstructor = resolvedRole === 'instructor' || resolvedRole === 'admin'
   const homePath = viewingInstructor ? '/instructor-dashboard' : '/student-dashboard'
   const navLinks = viewingInstructor ? [...instructorLinks, ...commonLinks] : [...studentLinks, ...commonLinks]
+
+  const unreadNotifications = useMemo(() => notifications.filter((n) => !n.is_read).length, [notifications])
 
   // Close mobile menu on route change and when viewport grows
   useEffect(() => {
@@ -218,9 +222,34 @@ export default function Layout() {
               </button>
             )}
           </div>
-          {navLinks.map((link) => (
-            <NavLink key={link.to} to={link.to} className={active} onClick={() => setNavOpen(false)}>{link.label}</NavLink>
-          ))}
+          {navLinks.map((link) => {
+            const showBadge = link.to === '/notifications' && unreadNotifications > 0
+            const label = link.label
+            return (
+              <NavLink key={link.to} to={link.to} className={active} onClick={() => setNavOpen(false)}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>{label}</span>
+                  {showBadge && (
+                    <span
+                      className="badge"
+                      aria-label={`${unreadNotifications} unread notifications`}
+                      style={{
+                        background: '#d03b3b',
+                        borderRadius: 12,
+                        color: '#fff',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        padding: '2px 8px',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {unreadNotifications}
+                    </span>
+                  )}
+                </span>
+              </NavLink>
+            )
+          })}
           <NavLink to="/logout" className={active} onClick={() => setNavOpen(false)}>Logout</NavLink>
         </nav>
       </aside>

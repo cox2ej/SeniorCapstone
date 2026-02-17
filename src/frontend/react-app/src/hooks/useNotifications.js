@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 import { apiGet, apiPost, isBackendEnabled } from '../api/client.js'
 import { useMockStore } from '../store/mockStore.jsx'
+
+const POLL_INTERVAL_MS = 5000
+const NotificationsContext = createContext(null)
 
 const normalizeNotifications = (payload) => {
   if (!payload) return []
@@ -10,7 +13,7 @@ const normalizeNotifications = (payload) => {
   return []
 }
 
-export function useNotifications() {
+export function NotificationsProvider({ children }) {
   const backendEnabled = isBackendEnabled()
   const mockStore = useMockStore()
   const [items, setItems] = useState([])
@@ -46,9 +49,9 @@ export function useNotifications() {
     return events.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
   }, [backendEnabled, mockStore])
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async ({ silent } = {}) => {
     if (!backendEnabled) return mockNotifications
-    setLoading(true)
+    if (!silent) setLoading(true)
     setError(null)
     try {
       const data = await apiGet('/notifications/')
@@ -59,7 +62,7 @@ export function useNotifications() {
       setError(err)
       throw err
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [backendEnabled, mockNotifications])
 
@@ -97,13 +100,33 @@ export function useNotifications() {
     }
   }, [backendEnabled, mockNotifications, fetchNotifications])
 
-  return {
+  useEffect(() => {
+    if (!backendEnabled) return undefined
+    const interval = setInterval(() => {
+      fetchNotifications({ silent: true }).catch(() => {})
+    }, POLL_INTERVAL_MS)
+    return () => clearInterval(interval)
+  }, [backendEnabled, fetchNotifications])
+
+  const refresh = useCallback(() => fetchNotifications(), [fetchNotifications])
+
+  const value = useMemo(() => ({
     backendEnabled,
     notifications: backendEnabled ? items : mockNotifications,
     loading,
     error,
-    refresh: fetchNotifications,
+    refresh,
     markRead,
     markAllRead,
+  }), [backendEnabled, items, mockNotifications, loading, error, refresh, markRead, markAllRead])
+
+  return React.createElement(NotificationsContext.Provider, { value }, children)
+}
+
+export function useNotifications() {
+  const context = useContext(NotificationsContext)
+  if (!context) {
+    throw new Error('useNotifications must be used within a NotificationsProvider')
   }
+  return context
 }
