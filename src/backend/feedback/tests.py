@@ -113,7 +113,7 @@ class DashboardSummaryAPITests(APITestCase):
       comments='Solid'
     )
 
-    AssignmentReviewer.objects.create(assignment=self.peer_assignment, user=self.student)
+    # leave one pending reviewer slot for the student (created above)
 
   def authenticate(self, user):
     self.client.force_authenticate(user=user)

@@ -2,6 +2,7 @@ from rest_framework import viewsets
 
 from .models import Assignment, Course, Enrollment
 from .serializers import AssignmentSerializer, CourseSerializer, EnrollmentSerializer
+from notifications.services import notify_assignment_posted
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -39,4 +40,5 @@ class AssignmentViewSet(viewsets.ModelViewSet):
     return qs
 
   def perform_create(self, serializer):
-    serializer.save(created_by=self.request.user)
+    assignment = serializer.save(created_by=self.request.user)
+    notify_assignment_posted(assignment)

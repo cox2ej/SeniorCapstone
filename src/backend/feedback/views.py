@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from courses.models import Assignment
 from courses.serializers import AssignmentSerializer
 from .models import AssignmentReviewer, FeedbackAnalytics, FeedbackSubmission, SelfAssessment
+from notifications.services import notify_feedback_submission
 from .serializers import (
   AssignmentReviewerSerializer,
   FeedbackAnalyticsSerializer,
@@ -117,7 +118,8 @@ class FeedbackSubmissionViewSet(viewsets.ModelViewSet):
       raise permissions.PermissionDenied('This reviewer slot belongs to another user.')
     if assignment.created_by_id == self.request.user.id:
       raise permissions.PermissionDenied('You cannot review your own assignment.')
-    serializer.save(reviewer=reviewer)
+    submission = serializer.save(reviewer=reviewer)
+    notify_feedback_submission(submission)
 
 
 class SelfAssessmentViewSet(viewsets.ModelViewSet):

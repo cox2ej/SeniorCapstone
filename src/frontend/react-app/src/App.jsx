@@ -25,6 +25,7 @@ import Registration from './pages/Registration.jsx'
 import ForgotPassword from './pages/ForgotPassword.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
 import { MockStoreProvider } from './store/mockStore.jsx'
+import { NotificationsProvider } from './hooks/useNotifications.js'
 import { isBackendEnabled, apiGet, apiPost } from './api/client.js'
 
 function SkipLink() {
@@ -157,7 +158,8 @@ export default function App() {
       <SkipLink />
       <RouteAnnouncer />
       <MockStoreProvider>
-        <Routes>
+        <NotificationsProvider>
+          <Routes>
           <Route path="/" element={<Navigate to="/student-dashboard" replace />} />
           {/* Auth routes (no sidebar) */}
           <Route path="/login" element={<Login />} />
@@ -187,7 +189,8 @@ export default function App() {
           </Route>
           <Route path="/logout" element={<LogoutCard />} />
           <Route path="*" element={<Placeholder title="Page not found" />} />
-        </Routes>
+          </Routes>
+        </NotificationsProvider>
       </MockStoreProvider>
     </>
   )
