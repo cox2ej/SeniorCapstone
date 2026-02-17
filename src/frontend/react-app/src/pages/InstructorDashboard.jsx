@@ -1,6 +1,25 @@
 import { Link } from 'react-router-dom'
+import { useMemo } from 'react'
+
+import { useDashboardSummary } from '../hooks/useDashboardSummary.js'
+
+const formatAverage = (value) => {
+  if (value == null || Number.isNaN(value)) return '—'
+  return Number(value).toFixed(1)
+}
 
 export default function InstructorDashboard() {
+  const { summary, loading, error, refresh } = useDashboardSummary()
+
+  const stats = useMemo(() => ({
+    courseAssignments: summary?.course_assignments ?? 0,
+    courseReviews: summary?.course_reviews ?? 0,
+    pendingCourse: summary?.pending_reviews_for_course ?? 0,
+    avgCourse: summary?.average_rating_for_course,
+    myAssignments: summary?.assignments_posted ?? 0,
+    myReviewsGiven: summary?.reviews_given ?? 0,
+  }), [summary])
+
   return (
     <>
       <h1>Instructor Dashboard</h1>
@@ -11,7 +30,7 @@ export default function InstructorDashboard() {
           <div className="tile-subtitle">Start a new assignment</div>
           <div className="tile-content">
             <ul>
-              <li>Templates available: 4</li>
+              <li>{loading ? 'Loading…' : `Assignments posted: ${stats.myAssignments}`}</li>
             </ul>
           </div>
         </Link>
@@ -20,7 +39,7 @@ export default function InstructorDashboard() {
           <div className="tile-subtitle">Courses and groups</div>
           <div className="tile-content">
             <ul>
-              <li>Active courses: 3</li>
+              <li>{loading ? 'Loading courses…' : `Assignments under you: ${stats.courseAssignments}`}</li>
             </ul>
           </div>
         </Link>
@@ -29,7 +48,7 @@ export default function InstructorDashboard() {
           <div className="tile-subtitle">Class performance</div>
           <div className="tile-content">
             <ul>
-              <li>New reports: 2</li>
+              <li>{loading ? 'Loading stats…' : `Course reviews logged: ${stats.courseReviews}`}</li>
             </ul>
           </div>
         </Link>
@@ -38,7 +57,7 @@ export default function InstructorDashboard() {
           <div className="tile-subtitle">Download data</div>
           <div className="tile-content">
             <ul>
-              <li>Queued exports: 0</li>
+              <li>{loading ? 'Loading…' : `Pending reviews: ${stats.pendingCourse}`}</li>
             </ul>
           </div>
         </Link>
@@ -47,7 +66,7 @@ export default function InstructorDashboard() {
           <div className="tile-subtitle">Configure pairing</div>
           <div className="tile-content">
             <ul>
-              <li>Pending: 1</li>
+              <li>{loading ? 'Loading…' : `Reviews you gave: ${stats.myReviewsGiven}`}</li>
             </ul>
           </div>
         </Link>
@@ -56,11 +75,16 @@ export default function InstructorDashboard() {
           <div className="tile-subtitle">Trends and insights</div>
           <div className="tile-content">
             <ul>
-              <li>New charts: 1</li>
+              <li>{loading ? 'Loading averages…' : `Avg rating: ${formatAverage(stats.avgCourse)}`}</li>
             </ul>
           </div>
         </Link>
       </div>
+      {error && (
+        <p role="alert" className="error-text">
+          Unable to load instructor summary. <button type="button" className="link" onClick={refresh}>Retry</button>
+        </p>
+      )}
     </>
   )
 }

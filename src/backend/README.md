@@ -21,4 +21,11 @@ API base URL: `http://localhost:8000/api/`
 - `courses`: `/api/courses/`, `/api/assignments/`, `/api/enrollments/`
 - `feedback`: `/api/feedback/`, `/api/self-assessments/`, `/api/analytics/`, `/api/assignment-reviewers/`
 
+### Dashboard summary endpoint
+- `GET /api/dashboard/summary/`
+  - Auth: session (same as other APIs)
+  - Returns counts for the current user: `assignments_posted`, `reviews_given`, `reviews_received`, `pending_reviews`, and average ratings given/received.
+  - Instructor/admin accounts also receive course-wide rollups (`course_assignments`, `course_reviews`, `pending_reviews_for_course`, `average_rating_for_course`).
+  - Use this for populating Student/Instructor dashboards; responses are JSON with nullable averages.
+
 All endpoints use session auth for now; add DRF tokens/OAuth later.

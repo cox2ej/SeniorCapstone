@@ -1,8 +1,9 @@
-from django.db.models import Count
+from django.db.models import Avg, Count, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from courses.models import Assignment
 from courses.serializers import AssignmentSerializer
@@ -140,3 +141,51 @@ class SelfAssessmentViewSet(viewsets.ModelViewSet):
 class FeedbackAnalyticsViewSet(viewsets.ReadOnlyModelViewSet):
   queryset = FeedbackAnalytics.objects.select_related('assignment').all()
   serializer_class = FeedbackAnalyticsSerializer
+
+
+class DashboardSummaryView(APIView):
+  permission_classes = [permissions.IsAuthenticated]
+
+  def get(self, request):
+    user = request.user
+    assignments_posted = Assignment.objects.filter(created_by=user)
+    reviews_given = FeedbackSubmission.objects.filter(reviewer__user=user)
+    reviews_received = FeedbackSubmission.objects.filter(assignment__created_by=user)
+
+    submitted_filter = Q(submissions__status__in=[FeedbackSubmission.Status.SUBMITTED, FeedbackSubmission.Status.PUBLISHED])
+    pending_reviews = (
+      AssignmentReviewer.objects
+      .filter(user=user)
+      .annotate(submitted_count=Count('submissions', filter=submitted_filter))
+      .filter(submitted_count=0)
+      .count()
+    )
+
+    summary = {
+      'role': getattr(user, 'role', None),
+      'assignments_posted': assignments_posted.count(),
+      'reviews_given': reviews_given.count(),
+      'reviews_received': reviews_received.count(),
+      'pending_reviews': pending_reviews,
+      'average_rating_given': reviews_given.aggregate(avg=Avg('rating'))['avg'],
+      'average_rating_received': reviews_received.aggregate(avg=Avg('rating'))['avg'],
+    }
+
+    if getattr(user, 'is_instructor', False) or getattr(user, 'is_staff', False):
+      instructor_assignments = Assignment.objects.filter(course__instructor=user)
+      course_reviews = FeedbackSubmission.objects.filter(assignment__course__instructor=user)
+      instructor_pending = (
+        AssignmentReviewer.objects
+        .filter(assignment__course__instructor=user)
+        .annotate(submitted_count=Count('submissions', filter=submitted_filter))
+        .filter(submitted_count=0)
+        .count()
+      )
+      summary.update({
+        'course_assignments': instructor_assignments.count(),
+        'course_reviews': course_reviews.count(),
+        'pending_reviews_for_course': instructor_pending,
+        'average_rating_for_course': course_reviews.aggregate(avg=Avg('rating'))['avg'],
+      })
+
+    return Response(summary)
