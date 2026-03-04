@@ -37,8 +37,9 @@ export default function MyFeedback() {
               label: c.label,
               description: c.description,
               required: Boolean(c.required),
-              min_score: Number(c.minScore ?? 0),
-              max_score: Number(c.maxScore ?? 5),
+              min_score: 1,
+              max_score: 5,
+              scale_descriptions: c.scaleDescriptions,
             })),
           }
         : undefined
@@ -74,9 +75,14 @@ export default function MyFeedback() {
         id: `crit-${Math.random().toString(36).slice(2, 8)}`,
         label: '',
         description: '',
-        minScore: 1,
-        maxScore: 5,
         required: true,
+        scaleDescriptions: {
+          1: '',
+          2: '',
+          3: '',
+          4: '',
+          5: '',
+        },
       }
     ]))
   }
@@ -85,6 +91,17 @@ export default function MyFeedback() {
     setRubricCriteria((prev) => {
       const next = [...prev]
       next[index] = { ...next[index], [field]: value }
+      return next
+    })
+  }
+
+  const handleScaleDescriptionChange = (index, score, value) => {
+    setRubricCriteria((prev) => {
+      const next = [...prev]
+      const criterion = next[index]
+      const scale = { ...(criterion.scaleDescriptions || {}) }
+      scale[score] = value
+      next[index] = { ...criterion, scaleDescriptions: scale }
       return next
     })
   }
@@ -132,50 +149,58 @@ export default function MyFeedback() {
                 <p className="muted">No custom criteria yet.</p>
               )}
               {rubricCriteria.length > 0 && (
-                <div className="rubric-editor" role="table" aria-label="Custom rubric criteria">
+                <div className="rubric-editor" aria-label="Custom rubric criteria">
                   {rubricCriteria.map((criterion, index) => (
-                    <div key={criterion.id} className="rubric-row" role="row" style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr auto', gap: 8, marginBottom: 8 }}>
-                      <input
-                        type="text"
-                        placeholder="Label"
-                        value={criterion.label}
-                        onChange={(e) => handleCriterionChange(index, 'label', e.target.value)}
-                        aria-label={`Criterion ${index + 1} label`}
-                        required
-                      />
-                      <input
-                        type="text"
-                        placeholder="Description"
+                    <div key={criterion.id} className="rubric-row" style={{ border: '1px solid var(--border-color, #ddd)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <input
+                          type="text"
+                          placeholder="Criterion title"
+                          value={criterion.label}
+                          onChange={(e) => handleCriterionChange(index, 'label', e.target.value)}
+                          aria-label={`Criterion ${index + 1} label`}
+                          required
+                          style={{ flex: '1 1 220px' }}
+                        />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <input
+                            type="checkbox"
+                            checked={Boolean(criterion.required)}
+                            onChange={(e) => handleCriterionChange(index, 'required', e.target.checked)}
+                            aria-label={`Criterion ${index + 1} required`}
+                          />
+                          Required
+                        </label>
+                        <button type="button" className="btn" onClick={() => handleRemoveCriterion(index)} aria-label={`Remove criterion ${criterion.label || index + 1}`}>
+                          Remove
+                        </button>
+                      </div>
+                      <textarea
+                        placeholder="Describe the overall expectations for this area"
                         value={criterion.description}
                         onChange={(e) => handleCriterionChange(index, 'description', e.target.value)}
-                        aria-label={`Criterion ${index + 1} description`}
+                        aria-label={`Criterion ${index + 1} overview description`}
+                        style={{ width: '100%', marginTop: 8, minHeight: 60 }}
                       />
-                      <input
-                        type="number"
-                        min="0"
-                        value={criterion.minScore}
-                        onChange={(e) => handleCriterionChange(index, 'minScore', e.target.value)}
-                        aria-label={`Criterion ${index + 1} minimum score`}
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        value={criterion.maxScore}
-                        onChange={(e) => handleCriterionChange(index, 'maxScore', e.target.value)}
-                        aria-label={`Criterion ${index + 1} maximum score`}
-                      />
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <input
-                          type="checkbox"
-                          checked={criterion.required}
-                          onChange={(e) => handleCriterionChange(index, 'required', e.target.checked)}
-                          aria-label={`Criterion ${index + 1} required`}
-                        />
-                        Required
-                      </label>
-                      <button type="button" className="btn" onClick={() => handleRemoveCriterion(index)} aria-label={`Remove criterion ${criterion.label || index + 1}`}>
-                        Remove
-                      </button>
+                      <div className="rubric-grid" role="table" aria-label={`Score descriptions for ${criterion.label || `criterion ${index + 1}`}`} style={{ marginTop: 12, overflowX: 'auto' }}>
+                        <div role="row" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 8, fontWeight: 600 }}>
+                          {[1, 2, 3, 4, 5].map((score) => (
+                            <div key={`head-${criterion.id}-${score}`} role="columnheader" style={{ textAlign: 'center' }}>{score} pt{score !== 1 ? 's' : ''}</div>
+                          ))}
+                        </div>
+                        <div role="row" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 8, marginTop: 8 }}>
+                          {[1, 2, 3, 4, 5].map((score) => (
+                            <textarea
+                              key={`cell-${criterion.id}-${score}`}
+                              value={criterion.scaleDescriptions?.[score] || ''}
+                              onChange={(e) => handleScaleDescriptionChange(index, score, e.target.value)}
+                              placeholder={`Describe what earns ${score} point${score !== 1 ? 's' : ''}`}
+                              style={{ width: '100%', minHeight: 70 }}
+                              aria-label={`Description for score ${score}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
