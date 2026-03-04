@@ -15,7 +15,17 @@ class FeedbackSubmissionAPITests(APITestCase):
     self.other_student = User.objects.create_user(username='student2', password='pass', role=User.Roles.STUDENT)
 
     self.course = Course.objects.create(code='ENG101', title='Writing 101', instructor=self.instructor)
-    self.assignment = Assignment.objects.create(course=self.course, created_by=self.other_student, title='Essay Draft')
+    self.assignment = Assignment.objects.create(
+      course=self.course,
+      created_by=self.other_student,
+      title='Essay Draft',
+      rubric={
+        'criteria': [
+          {'id': 'clarity', 'label': 'Clarity', 'required': True, 'min_score': 1, 'max_score': 5},
+          {'id': 'depth', 'label': 'Depth', 'required': False, 'min_score': 0, 'max_score': 10},
+        ]
+      }
+    )
     self.url = reverse('feedback-list')
 
   def authenticate(self, user):
@@ -27,7 +37,7 @@ class FeedbackSubmissionAPITests(APITestCase):
       'assignment': self.assignment.id,
       'rating': 4,
       'comments': 'Nice job',
-      'rubric_scores': {'clarity': 4}
+      'rubric_scores': {'clarity': 4, 'depth': 8}
     }
 
     response = self.client.post(self.url, payload, format='json')
@@ -37,6 +47,8 @@ class FeedbackSubmissionAPITests(APITestCase):
     self.assertEqual(submission.reviewer.user, self.student)
     self.assertEqual(submission.rating, 4)
     self.assertEqual(submission.assignment, self.assignment)
+    self.assertEqual(submission.rubric_scores['clarity'], 4)
+    self.assertEqual(submission.rubric_scores['depth'], 8)
 
   def test_cannot_review_own_assignment(self):
     self.authenticate(self.other_student)
@@ -80,6 +92,48 @@ class FeedbackSubmissionAPITests(APITestCase):
     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     self.assertIn('reviewer', response.data)
     self.assertEqual(FeedbackSubmission.objects.count(), 0)
+
+  def test_rubric_requires_required_criterion(self):
+    self.authenticate(self.student)
+    payload = {
+      'assignment': self.assignment.id,
+      'rating': 4,
+      'rubric_scores': {'depth': 5},
+    }
+
+    response = self.client.post(self.url, payload, format='json')
+
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    self.assertIn('rubric_scores', response.data)
+    self.assertIn('clarity', response.data['rubric_scores'])
+
+  def test_rubric_scores_must_respect_range(self):
+    self.authenticate(self.student)
+    payload = {
+      'assignment': self.assignment.id,
+      'rating': 4,
+      'rubric_scores': {'clarity': 6},
+    }
+
+    response = self.client.post(self.url, payload, format='json')
+
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    self.assertIn('rubric_scores', response.data)
+    self.assertIn('clarity', response.data['rubric_scores'])
+
+  def test_rubric_scores_must_be_numeric(self):
+    self.authenticate(self.student)
+    payload = {
+      'assignment': self.assignment.id,
+      'rating': 4,
+      'rubric_scores': {'clarity': 'excellent'},
+    }
+
+    response = self.client.post(self.url, payload, format='json')
+
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    self.assertIn('rubric_scores', response.data)
+    self.assertIn('clarity', response.data['rubric_scores'])
 
 
 class DashboardSummaryAPITests(APITestCase):

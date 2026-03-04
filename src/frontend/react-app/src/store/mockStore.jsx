@@ -29,30 +29,30 @@ export function MockStoreProvider({ children }) {
 
   const setCurrentUser = (u) => setStore(s => ({ ...s, currentUser: u }))
 
-  const addAssignment = ({ title, description }) => {
+  const addAssignment = ({ title, description, rubric }) => {
     const id = 'a_' + Math.random().toString(36).slice(2, 9)
     const createdAt = new Date().toISOString()
     setStore(s => ({
       ...s,
-      assignments: [...s.assignments, { id, title, description, owner: s.currentUser, createdAt }]
+      assignments: [...s.assignments, { id, title, description, owner: s.currentUser, createdAt, rubric: rubric || {} }]
     }))
   }
 
-  const addAssignmentFor = (ownerId, { title, description }) => {
+  const addAssignmentFor = (ownerId, { title, description, rubric }) => {
     const id = 'a_' + Math.random().toString(36).slice(2, 9)
     const createdAt = new Date().toISOString()
     setStore(s => ({
       ...s,
-      assignments: [...s.assignments, { id, title, description, owner: ownerId, createdAt }]
+      assignments: [...s.assignments, { id, title, description, owner: ownerId, createdAt, rubric: rubric || {} }]
     }))
   }
 
-  const addReview = ({ assignmentId, rating, comments }) => {
+  const addReview = ({ assignmentId, rating, comments, rubricScores }) => {
     const id = 'r_' + Math.random().toString(36).slice(2, 9)
     const createdAt = new Date().toISOString()
     setStore(s => ({
       ...s,
-      reviews: [...s.reviews, { id, assignmentId, rating: Number(rating), comments, reviewer: s.currentUser, createdAt }]
+      reviews: [...s.reviews, { id, assignmentId, rating: Number(rating), comments, rubricScores: rubricScores || {}, reviewer: s.currentUser, createdAt }]
     }))
   }
 

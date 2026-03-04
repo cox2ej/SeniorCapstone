@@ -4,6 +4,7 @@ import { useMockStore } from '../store/mockStore.jsx'
 import { useAssignmentsData } from '../hooks/useAssignmentsData.js'
 import { useReviewActions } from '../hooks/useReviewsData.js'
 import { useReviewerMatches, useMatchActions, useAvailableAssignmentsForReview } from '../hooks/useReviewerMatches.js'
+import { apiGet } from '../api/client.js'
 
 export default function GiveFeedback() {
   const navigate = useNavigate()
@@ -93,12 +94,70 @@ export default function GiveFeedback() {
   const [message, setMessage] = useState('')
   const [errors, setErrors] = useState([])
   const errorSummaryRef = useRef(null)
+  const [rubricDetail, setRubricDetail] = useState(null)
+  const [rubricScores, setRubricScores] = useState({})
+  const [rubricErrors, setRubricErrors] = useState({})
+  const [rubricLoading, setRubricLoading] = useState(false)
+  const [rubricError, setRubricError] = useState(null)
   const [matchMsg, setMatchMsg] = useState('')
   const [queue, setQueue] = useState(baseReviewQueue)
+  const rubricCriteria = useMemo(() => (
+    Array.isArray(rubricDetail?.criteria) ? rubricDetail.criteria : []
+  ), [rubricDetail])
+  const rubricColumnScores = useMemo(() => {
+    const set = new Set()
+    rubricCriteria.forEach((criterion) => {
+      const min = typeof criterion.min_score === 'number' ? criterion.min_score : 1
+      const max = typeof criterion.max_score === 'number' ? criterion.max_score : 5
+      for (let score = min; score <= max; score += 1) {
+        set.add(score)
+      }
+    })
+    return Array.from(set).sort((a, b) => a - b)
+  }, [rubricCriteria])
 
   useEffect(() => {
     setQueue(baseReviewQueue)
   }, [baseReviewQueue])
+
+  useEffect(() => {
+    setRubricErrors({})
+    setRubricScores({})
+    if (!assignment) {
+      setRubricDetail(null)
+      setRubricLoading(false)
+      setRubricError(null)
+      return undefined
+    }
+    if (!usingBackend) {
+      setRubricDetail(assignment.rubric || assignment.rubric_template_detail?.definition || null)
+      setRubricLoading(false)
+      setRubricError(null)
+      return undefined
+    }
+
+    let cancelled = false
+    setRubricLoading(true)
+    setRubricError(null)
+    async function fetchRubric() {
+      try {
+        const data = await apiGet(`/assignments/${assignment.id}/rubric/`)
+        if (!cancelled) {
+          const fallback = assignment.rubric || assignment.rubric_template_detail?.definition || null
+          setRubricDetail(data?.rubric || fallback)
+        }
+      } catch (err) {
+        if (!cancelled) setRubricError(err)
+      } finally {
+        if (!cancelled) setRubricLoading(false)
+      }
+    }
+
+    fetchRubric()
+    return () => {
+      cancelled = true
+    }
+  }, [assignment, usingBackend])
 
   useEffect(() => {
     if (!matchMsg) return undefined
@@ -117,6 +176,16 @@ export default function GiveFeedback() {
     return users[assignment.owner]?.name || assignment.owner
   }, [assignment, usingBackend, users])
 
+  const handleRubricScoreChange = (criterionId, value) => {
+    setRubricScores(prev => ({ ...prev, [criterionId]: value }))
+    setRubricErrors(prev => {
+      if (!prev[criterionId]) return prev
+      const next = { ...prev }
+      delete next[criterionId]
+      return next
+    })
+  }
+
   async function onSubmit(e) {
     e.preventDefault()
     const form = e.currentTarget
@@ -132,12 +201,51 @@ export default function GiveFeedback() {
       setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
       return
     }
+    const rubricIssues = {}
+    rubricCriteria.forEach((criterion) => {
+      const raw = rubricScores[criterion.id]
+      const hasValue = raw !== undefined && raw !== null && raw !== ''
+      const min = typeof criterion.min_score === 'number' ? criterion.min_score : 0
+      const max = typeof criterion.max_score === 'number' ? criterion.max_score : 5
+      if (!hasValue) {
+        if (criterion.required) {
+          rubricIssues[criterion.id] = 'Score required.'
+        }
+        return
+      }
+      const value = Number(raw)
+      if (Number.isNaN(value)) {
+        rubricIssues[criterion.id] = 'Enter a numeric score.'
+        return
+      }
+      if (value < min || value > max) {
+        rubricIssues[criterion.id] = `Score must be between ${min} and ${max}.`
+      }
+    })
+    if (Object.keys(rubricIssues).length) {
+      const rubricErrorList = Object.entries(rubricIssues).map(([criterionId, message]) => {
+        const label = rubricCriteria.find(c => c.id === criterionId)?.label || 'Criterion'
+        return { field: `rubric-${criterionId}`, message: `${label}: ${message}` }
+      })
+      setErrors(rubricErrorList)
+      setRubricErrors(rubricIssues)
+      setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
+      return
+    }
+    setErrors([])
+    setRubricErrors({})
     if (assignmentId && assignment) {
       try {
+        const rubricScorePayload = rubricCriteria.reduce((acc, criterion) => {
+          const raw = rubricScores[criterion.id]
+          if (raw === undefined || raw === null || raw === '') return acc
+          acc[criterion.id] = Number(raw)
+          return acc
+        }, {})
         if (usingBackend) {
-          await submitReview({ assignmentId: assignment.id, rating: n, comments })
+          await submitReview({ assignmentId: assignment.id, rating: n, comments, rubricScores: rubricScorePayload })
         } else {
-          addReview({ assignmentId, rating: n, comments })
+          addReview({ assignmentId, rating: n, comments, rubricScores: rubricScorePayload })
         }
         const out = new URLSearchParams({ assignmentId: assignmentId, rating: String(n), comments })
         navigate(`/feedback-confirmation?${out.toString()}`)
@@ -220,24 +328,6 @@ export default function GiveFeedback() {
   return (
     <>
       <h1 id="give-feedback-title">Give Feedback</h1>
-      <section className="tile" aria-labelledby="rubric-heading">
-        <h2 id="rubric-heading" className="tile-title">Rubric & Attachments</h2>
-        <div className="tile-content">
-          <h3>Rubric (placeholder)</h3>
-          <ul>
-            <li><strong>Clarity &amp; Organization</strong>: 1–5 — Is the feedback easy to follow and well structured?</li>
-            <li><strong>Constructiveness</strong>: 1–5 — Does it include actionable suggestions?</li>
-            <li><strong>Specificity</strong>: 1–5 — Does it reference concrete examples?</li>
-            <li><strong>Professionalism</strong>: 1–5 — Is the tone respectful and objective?</li>
-          </ul>
-          <h3>Attachments (placeholder)</h3>
-          <ul>
-            <li><a href="#" aria-label="Download assignment brief (mock)">Assignment brief (PDF)</a></li>
-            <li><a href="#" aria-label="Download rubric (mock)">Rubric (PDF)</a></li>
-            <li><a href="#" aria-label="Download starter files (mock)">Starter files (ZIP)</a></li>
-          </ul>
-        </div>
-      </section>
 
       {errors.length > 0 && (
         <div className="error-summary" role="alert" aria-labelledby="gf-error-summary-title" tabIndex="-1" ref={errorSummaryRef}>
@@ -429,6 +519,90 @@ export default function GiveFeedback() {
                 ))}
               </ul>
             </section>
+          )}
+
+          {rubricLoading ? (
+            <p className="muted">Loading rubric…</p>
+          ) : rubricError ? (
+            <p className="error-text" role="alert">Unable to load rubric: {rubricError.message || 'Unknown error.'}</p>
+          ) : rubricCriteria.length > 0 ? (
+            <section className="rubric-inputs" aria-label="Assignment rubric">
+              <h3>Rubric</h3>
+              <p className="muted">Click the description that best matches the work for each row.</p>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="rubric-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '2px solid var(--border-color, #ccc)' }}>Criterion</th>
+                      {rubricColumnScores.map((score) => (
+                        <th key={`rubric-head-${score}`} style={{ padding: '8px 12px', borderBottom: '2px solid var(--border-color, #ccc)', textAlign: 'center' }}>
+                          <div style={{ fontSize: 14 }}><strong>{score}</strong></div>
+                          <div style={{ fontSize: 12, color: 'var(--muted-color, #666)' }}>points</div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rubricCriteria.map((criterion) => {
+                      const min = typeof criterion.min_score === 'number' ? criterion.min_score : 1
+                      const max = typeof criterion.max_score === 'number' ? criterion.max_score : 5
+                      const hasError = Boolean(rubricErrors[criterion.id])
+                      const selectedScore = rubricScores[criterion.id]
+                      const scaleDescriptions = criterion.scale_descriptions || {}
+                      return (
+                        <tr key={criterion.id} style={{ borderBottom: '1px solid var(--border-color, #eee)' }}>
+                          <th scope="row" style={{ verticalAlign: 'top', padding: '12px', minWidth: 180 }}>
+                            <div style={{ fontWeight: 600 }}>{criterion.label}{criterion.required && <span className="muted"> *</span>}</div>
+                            {criterion.description && <p style={{ marginTop: 6, marginBottom: 6 }}>{criterion.description}</p>}
+                            <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+                              {selectedScore ? `Selected: ${selectedScore} point${selectedScore !== 1 ? 's' : ''}` : 'No score selected yet.'}
+                            </p>
+                            {hasError && (
+                              <p className="help-error" style={{ marginTop: 6 }}>{rubricErrors[criterion.id]}</p>
+                            )}
+                          </th>
+                          {rubricColumnScores.map((score) => {
+                            const inRange = score >= min && score <= max
+                            const description = scaleDescriptions?.[score]
+                            if (!inRange) {
+                              return (
+                                <td key={`${criterion.id}-${score}`} style={{ padding: '12px', textAlign: 'center', color: 'var(--muted-color, #bbb)' }}>—</td>
+                              )
+                            }
+                            const isSelected = Number(selectedScore) === Number(score)
+                            return (
+                              <td key={`${criterion.id}-${score}`} style={{ padding: 0 }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRubricScoreChange(criterion.id, score)}
+                                  aria-pressed={isSelected}
+                                  className="rubric-cell-button"
+                                  style={{
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    border: 'none',
+                                    padding: '12px',
+                                    background: isSelected ? 'var(--accent-muted, #e6f2ff)' : 'transparent',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <div style={{ fontWeight: 600, fontSize: 13 }}>Score {score}</div>
+                                  <p style={{ marginTop: 4, marginBottom: 0, fontSize: 14 }}>
+                                    {description || <span className="muted">No description provided.</span>}
+                                  </p>
+                                </button>
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ) : (
+            <p className="muted">This assignment does not define a rubric.</p>
           )}
 
           <label htmlFor="rating">Rating (1-5)</label>

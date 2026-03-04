@@ -67,12 +67,12 @@ export function useReviewActions() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const submitReview = useCallback(async ({ assignmentId, rating, comments }) => {
+  const submitReview = useCallback(async ({ assignmentId, rating, comments, rubricScores = {} }) => {
     if (!assignmentId) throw new Error('Assignment is required')
     if (!rating) throw new Error('Rating is required')
 
     if (!backendEnabled) {
-      mockStore.addReview({ assignmentId, rating: Number(rating), comments })
+      mockStore.addReview({ assignmentId, rating: Number(rating), comments, rubricScores })
       return null
     }
 
@@ -84,7 +84,7 @@ export function useReviewActions() {
         rating: Number(rating),
         comments: comments || '',
         status: 'submitted',
-        rubric_scores: {},
+        rubric_scores: rubricScores,
       }
       const created = await apiPost('/feedback/', payload)
       return created
