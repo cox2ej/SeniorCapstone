@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useMemo } from 'react'
 import { useMockStore } from '../store/mockStore.jsx'
 import { useAssignmentsData } from '../hooks/useAssignmentsData.js'
@@ -80,12 +80,20 @@ export default function FeedbackHistory() {
             <ul>
               {received.map(r => {
                 const dt = getTimestamp(r)
+                const detailUrl = r.id ? `/reviews/${r.id}` : null
                 return (
                   <li key={r.id}>
                     <strong>{getAssignmentTitle(r)}</strong> {dt ? <span className="muted">({new Date(dt).toLocaleString()})</span> : null}
                     <div>Rating: {r.rating}</div>
                     {r.comments && <div>{r.comments}</div>}
                     <div className="muted">Reviewer: {getReviewerLabel(r)}</div>
+                    {detailUrl && (
+                      <div className="actions" style={{ marginTop: 8 }}>
+                        <Link className="btn" to={detailUrl} aria-label={`View review details for ${getAssignmentTitle(r)}`}>
+                          View full review
+                        </Link>
+                      </div>
+                    )}
                   </li>
                 )
               })}

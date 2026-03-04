@@ -232,12 +232,20 @@ export default function MyFeedback() {
                 const assignment = backendEnabled
                   ? assignmentLookup?.[r.assignmentId] || getAssignmentById(r.assignmentId)
                   : getAssignmentById(r.assignmentId)
+                const detailUrl = r.id ? `/reviews/${r.id}` : null
                 return (
                   <li key={r.id}>
                     <strong>{assignment?.title || 'Assignment'}</strong>
                     <div>Rating: {r.rating}</div>
                     {r.comments && <div>Comment: {r.comments}</div>}
                     <div className="muted">Reviewer: {users[r.reviewer]?.name || r.reviewer}</div>
+                    {detailUrl && (
+                      <div className="actions" style={{ marginTop: 8 }}>
+                        <Link className="btn" to={detailUrl} aria-label={`View review details for ${assignment?.title || 'assignment'}`}>
+                          View full review
+                        </Link>
+                      </div>
+                    )}
                   </li>
                 )
               })}

@@ -5,6 +5,7 @@ import { useAssignmentsData } from '../hooks/useAssignmentsData.js'
 import { useReviewActions } from '../hooks/useReviewsData.js'
 import { useReviewerMatches, useMatchActions, useAvailableAssignmentsForReview } from '../hooks/useReviewerMatches.js'
 import { apiGet } from '../api/client.js'
+import RubricMatrix from '../components/RubricMatrix.jsx'
 
 export default function GiveFeedback() {
   const navigate = useNavigate()
@@ -104,17 +105,6 @@ export default function GiveFeedback() {
   const rubricCriteria = useMemo(() => (
     Array.isArray(rubricDetail?.criteria) ? rubricDetail.criteria : []
   ), [rubricDetail])
-  const rubricColumnScores = useMemo(() => {
-    const set = new Set()
-    rubricCriteria.forEach((criterion) => {
-      const min = typeof criterion.min_score === 'number' ? criterion.min_score : 1
-      const max = typeof criterion.max_score === 'number' ? criterion.max_score : 5
-      for (let score = min; score <= max; score += 1) {
-        set.add(score)
-      }
-    })
-    return Array.from(set).sort((a, b) => a - b)
-  }, [rubricCriteria])
 
   useEffect(() => {
     setQueue(baseReviewQueue)
@@ -525,84 +515,18 @@ export default function GiveFeedback() {
             <p className="muted">Loading rubric…</p>
           ) : rubricError ? (
             <p className="error-text" role="alert">Unable to load rubric: {rubricError.message || 'Unknown error.'}</p>
-          ) : rubricCriteria.length > 0 ? (
+          ) : (
             <section className="rubric-inputs" aria-label="Assignment rubric">
               <h3>Rubric</h3>
               <p className="muted">Click the description that best matches the work for each row.</p>
-              <div style={{ overflowX: 'auto' }}>
-                <table className="rubric-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '2px solid var(--border-color, #ccc)' }}>Criterion</th>
-                      {rubricColumnScores.map((score) => (
-                        <th key={`rubric-head-${score}`} style={{ padding: '8px 12px', borderBottom: '2px solid var(--border-color, #ccc)', textAlign: 'center' }}>
-                          <div style={{ fontSize: 14 }}><strong>{score}</strong></div>
-                          <div style={{ fontSize: 12, color: 'var(--muted-color, #666)' }}>points</div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rubricCriteria.map((criterion) => {
-                      const min = typeof criterion.min_score === 'number' ? criterion.min_score : 1
-                      const max = typeof criterion.max_score === 'number' ? criterion.max_score : 5
-                      const hasError = Boolean(rubricErrors[criterion.id])
-                      const selectedScore = rubricScores[criterion.id]
-                      const scaleDescriptions = criterion.scale_descriptions || {}
-                      return (
-                        <tr key={criterion.id} style={{ borderBottom: '1px solid var(--border-color, #eee)' }}>
-                          <th scope="row" style={{ verticalAlign: 'top', padding: '12px', minWidth: 180 }}>
-                            <div style={{ fontWeight: 600 }}>{criterion.label}{criterion.required && <span className="muted"> *</span>}</div>
-                            {criterion.description && <p style={{ marginTop: 6, marginBottom: 6 }}>{criterion.description}</p>}
-                            <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-                              {selectedScore ? `Selected: ${selectedScore} point${selectedScore !== 1 ? 's' : ''}` : 'No score selected yet.'}
-                            </p>
-                            {hasError && (
-                              <p className="help-error" style={{ marginTop: 6 }}>{rubricErrors[criterion.id]}</p>
-                            )}
-                          </th>
-                          {rubricColumnScores.map((score) => {
-                            const inRange = score >= min && score <= max
-                            const description = scaleDescriptions?.[score]
-                            if (!inRange) {
-                              return (
-                                <td key={`${criterion.id}-${score}`} style={{ padding: '12px', textAlign: 'center', color: 'var(--muted-color, #bbb)' }}>—</td>
-                              )
-                            }
-                            const isSelected = Number(selectedScore) === Number(score)
-                            return (
-                              <td key={`${criterion.id}-${score}`} style={{ padding: 0 }}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRubricScoreChange(criterion.id, score)}
-                                  aria-pressed={isSelected}
-                                  className="rubric-cell-button"
-                                  style={{
-                                    width: '100%',
-                                    textAlign: 'left',
-                                    border: 'none',
-                                    padding: '12px',
-                                    background: isSelected ? 'var(--accent-muted, #e6f2ff)' : 'transparent',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  <div style={{ fontWeight: 600, fontSize: 13 }}>Score {score}</div>
-                                  <p style={{ marginTop: 4, marginBottom: 0, fontSize: 14 }}>
-                                    {description || <span className="muted">No description provided.</span>}
-                                  </p>
-                                </button>
-                              </td>
-                            )
-                          })}
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <RubricMatrix
+                criteria={rubricCriteria}
+                selectedScores={rubricScores}
+                onScoreChange={handleRubricScoreChange}
+                errors={rubricErrors}
+                emptyLabel="This assignment does not define a rubric."
+              />
             </section>
-          ) : (
-            <p className="muted">This assignment does not define a rubric.</p>
           )}
 
           <label htmlFor="rating">Rating (1-5)</label>
