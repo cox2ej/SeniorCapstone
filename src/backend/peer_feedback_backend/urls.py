@@ -22,7 +22,7 @@ from accounts.views import CsrfTokenView, LoginView, LogoutView, UserViewSet
 from django.conf import settings
 from django.conf.urls.static import static
 
-from courses.views import AssignmentAttachmentViewSet, AssignmentViewSet, CourseViewSet, EnrollmentViewSet
+from courses.views import AssignmentAttachmentViewSet, AssignmentViewSet, CourseRubricTemplateViewSet, CourseViewSet, EnrollmentViewSet
 from feedback.views import (
   AssignmentReviewerViewSet,
   DashboardSummaryView,
@@ -38,6 +38,7 @@ router.register(r'courses', CourseViewSet)
 router.register(r'enrollments', EnrollmentViewSet)
 router.register(r'assignments', AssignmentViewSet)
 router.register(r'attachments', AssignmentAttachmentViewSet, basename='assignment-attachment')
+router.register(r'rubric-templates', CourseRubricTemplateViewSet, basename='course-rubric-template')
 router.register(r'assignment-reviewers', AssignmentReviewerViewSet, basename='assignment-reviewer')
 router.register(r'feedback', FeedbackSubmissionViewSet, basename='feedback')
 router.register(r'self-assessments', SelfAssessmentViewSet, basename='self-assessment')

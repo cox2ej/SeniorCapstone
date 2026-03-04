@@ -61,11 +61,11 @@ export function useAssignmentsData() {
     if (!payload?.title) throw new Error('Title is required')
 
     if (!backendEnabled) {
-      mockStore.addAssignment({ title: payload.title, description: payload.description || '' })
+      mockStore.addAssignment({ title: payload.title, description: payload.description || '', rubric: payload.rubric })
       return null
     }
 
-    const { attachments: attachmentFiles = [], ...restPayload } = payload
+    const { attachments: attachmentFiles = [], rubric, ...restPayload } = payload
     const courseId = payload.course ?? DEFAULT_COURSE_ID
     if (!courseId) {
       throw new Error('Set VITE_DEFAULT_COURSE_ID to a valid backend course id to post assignments.')
@@ -76,7 +76,7 @@ export function useAssignmentsData() {
       description: restPayload.description || '',
       allow_self_assessment: true,
       anonymize_reviewers: true,
-      rubric: {},
+      rubric: rubric || {},
       ...restPayload,
       course: courseId,
     })

@@ -46,6 +46,7 @@ class Assignment(models.Model):
   due_date = models.DateTimeField(null=True, blank=True)
   allow_self_assessment = models.BooleanField(default=True)
   anonymize_reviewers = models.BooleanField(default=True)
+  rubric_template = models.ForeignKey('CourseRubricTemplate', on_delete=models.SET_NULL, null=True, blank=True, related_name='assignments')
   rubric = models.JSONField(default=dict, blank=True)
   created_at = models.DateTimeField(auto_now_add=True)
   updated_at = models.DateTimeField(auto_now=True)
@@ -78,3 +79,20 @@ class AssignmentAttachment(models.Model):
 
   def __str__(self):
     return f"Attachment {self.id} for assignment {self.assignment_id}"
+
+
+class CourseRubricTemplate(models.Model):
+  course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='rubric_templates')
+  name = models.CharField(max_length=255)
+  description = models.TextField(blank=True)
+  definition = models.JSONField(default=dict, blank=True)
+  is_default = models.BooleanField(default=False)
+  created_at = models.DateTimeField(auto_now_add=True)
+  updated_at = models.DateTimeField(auto_now=True)
+
+  class Meta:
+    unique_together = ('course', 'name')
+    ordering = ['name']
+
+  def __str__(self):
+    return f"{self.name} ({self.course.code})"
