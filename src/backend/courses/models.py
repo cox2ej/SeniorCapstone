@@ -55,3 +55,26 @@ class Assignment(models.Model):
 
   def __str__(self):
     return f"{self.title} ({self.course.code})"
+
+
+def assignment_upload_to(instance, filename):
+  return f"assignments/{instance.assignment_id}/{filename}"
+
+
+class AssignmentAttachment(models.Model):
+  assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='attachments')
+  file = models.FileField(upload_to=assignment_upload_to)
+  original_name = models.CharField(max_length=255, blank=True)
+  uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='assignment_attachments')
+  uploaded_at = models.DateTimeField(auto_now_add=True)
+
+  class Meta:
+    ordering = ['-uploaded_at']
+
+  def save(self, *args, **kwargs):
+    if not self.original_name and hasattr(self.file, 'name'):
+      self.original_name = self.file.name
+    return super().save(*args, **kwargs)
+
+  def __str__(self):
+    return f"Attachment {self.id} for assignment {self.assignment_id}"

@@ -411,6 +411,26 @@ export default function GiveFeedback() {
             <p className="muted">No description provided.</p>
           )}
 
+          {Array.isArray(assignment.attachments) && assignment.attachments.length > 0 && (
+            <section className="attachment-list" aria-label="Assignment attachments">
+              <h3>Attachments</h3>
+              <ul>
+                {assignment.attachments.map((file) => (
+                  <li key={file.id}>
+                    <a
+                      href={file.file}
+                      target="_blank"
+                      rel="noreferrer"
+                      download={file.original_name || undefined}
+                    >
+                      {file.original_name || file.file?.split('/').pop() || 'Attachment'}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <label htmlFor="rating">Rating (1-5)</label>
           <input
             id="rating"

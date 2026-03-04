@@ -19,7 +19,10 @@ from django.urls import include, path
 from rest_framework import routers
 
 from accounts.views import CsrfTokenView, LoginView, LogoutView, UserViewSet
-from courses.views import AssignmentViewSet, CourseViewSet, EnrollmentViewSet
+from django.conf import settings
+from django.conf.urls.static import static
+
+from courses.views import AssignmentAttachmentViewSet, AssignmentViewSet, CourseViewSet, EnrollmentViewSet
 from feedback.views import (
   AssignmentReviewerViewSet,
   DashboardSummaryView,
@@ -34,6 +37,7 @@ router.register(r'users', UserViewSet)
 router.register(r'courses', CourseViewSet)
 router.register(r'enrollments', EnrollmentViewSet)
 router.register(r'assignments', AssignmentViewSet)
+router.register(r'attachments', AssignmentAttachmentViewSet, basename='assignment-attachment')
 router.register(r'assignment-reviewers', AssignmentReviewerViewSet, basename='assignment-reviewer')
 router.register(r'feedback', FeedbackSubmissionViewSet, basename='feedback')
 router.register(r'self-assessments', SelfAssessmentViewSet, basename='self-assessment')
@@ -42,9 +46,12 @@ router.register(r'notifications', NotificationViewSet, basename='notification')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
-    path('api/auth/csrf/', CsrfTokenView.as_view(), name='csrf-token'),
+    path('api/auth/csrf/', CsrfTokenView.as_view(), name='csrf'),
     path('api/auth/login/', LoginView.as_view(), name='login'),
     path('api/auth/logout/', LogoutView.as_view(), name='logout'),
+    path('api/', include(router.urls)),
     path('api/dashboard/summary/', DashboardSummaryView.as_view(), name='dashboard-summary'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
