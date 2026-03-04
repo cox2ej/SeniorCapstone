@@ -8,6 +8,7 @@ import FeedbackGuidelines from './pages/FeedbackGuidelines.jsx'
 import FeedbackConfirmation from './pages/FeedbackConfirmation.jsx'
 import MyFeedback from './pages/MyFeedback.jsx'
 import FeedbackHistory from './pages/FeedbackHistory.jsx'
+import ReviewDetails from './pages/ReviewDetails.jsx'
 import SelfAssessment from './pages/SelfAssessment.jsx'
 import Notifications from './pages/Notifications.jsx'
 import AboutHelp from './pages/AboutHelp.jsx'
@@ -174,6 +175,7 @@ export default function App() {
             <Route path="/feedback-confirmation" element={<FeedbackConfirmation />} />
             <Route path="/my-feedback" element={<MyFeedback />} />
             <Route path="/feedback-history" element={<FeedbackHistory />} />
+            <Route path="/reviews/:reviewId" element={<ReviewDetails />} />
             <Route path="/self-assessment" element={<SelfAssessment />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/about-help" element={<AboutHelp />} />

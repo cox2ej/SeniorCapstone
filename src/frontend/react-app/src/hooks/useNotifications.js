@@ -37,6 +37,7 @@ export function NotificationsProvider({ children }) {
       if (!assignment) return
       const received = assignment.owner === currentUser
       const who = users[r.reviewer]?.name || r.reviewer
+      const reviewLink = `/reviews/${r.id}`
       events.push({
         id: `review-${r.id}`,
         message: received
@@ -44,6 +45,8 @@ export function NotificationsProvider({ children }) {
           : `You reviewed ${users[assignment.owner]?.name || assignment.owner}'s ${assignment.title}`,
         created_at: r.createdAt || new Date().toISOString(),
         is_read: false,
+        feedback_id: r.id,
+        target_url: reviewLink,
       })
     })
     return events.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))

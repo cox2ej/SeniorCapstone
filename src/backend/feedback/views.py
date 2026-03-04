@@ -106,7 +106,7 @@ class FeedbackSubmissionViewSet(viewsets.ModelViewSet):
       elif role == 'given':
         qs = qs.filter(reviewer__user=user)
       else:
-        qs = qs.filter(reviewer__user=user)
+        qs = qs.filter(Q(reviewer__user=user) | Q(assignment__created_by=user))
     return qs
 
   def perform_create(self, serializer):
