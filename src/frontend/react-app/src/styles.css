@@ -448,6 +448,101 @@ small.muted {
   text-decoration: underline;
 }
 
+/* Profile */
+.profile-header-inner {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.profile-meta { flex: 1; min-width: 0; }
+.profile-name { font-weight: 600; font-size: 1.15rem; margin: 0 0 4px; }
+.role-badge { display: inline-block; margin-top: 4px; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; background: var(--primary); color: #fff; border-radius: 4px; }
+.profile-edit-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.stats-cards { margin-top: 8px; }
+.stats-cards .card { text-align: center; }
+.stat-value { font-size: 1.5rem; font-weight: 700; margin: 8px 0 0; color: var(--fg); }
+
+.toggle-label { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-weight: 500; }
+.toggle-label input[type="checkbox"] { width: auto; margin-top: 2px; }
+.radio-group { display: flex; flex-direction: column; gap: 8px; }
+.radio-label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.radio-label input[type="radio"] { width: auto; }
+.form-group { margin-bottom: 4px; }
+
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1600;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.modal-content {
+  background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 12px;
+  padding: 24px; max-width: 440px; width: 100%;
+}
+.modal-content h2 { margin: 0 0 12px; font-size: 1.2rem; }
+
+.faq-search-input { margin-bottom: 12px; max-width: 320px; }
+.faq-list { list-style: none; padding: 0; margin: 0; }
+.faq-item { border-bottom: 1px solid var(--border); }
+.faq-item:last-child { border-bottom: none; }
+.faq-question {
+  width: 100%; text-align: left; padding: 12px 0; font-weight: 600; background: none; border: none;
+  cursor: pointer; color: var(--fg); font-size: 1rem;
+}
+.faq-question:hover { color: var(--primary); }
+.faq-answer { padding: 0 0 12px; }
+.faq-answer p { margin: 0; color: var(--muted); line-height: 1.5; }
+.contact-form label { margin-top: 12px; }
+.contact-form input, .contact-form textarea { margin-top: 4px; }
+.getting-started-links { list-style: none; padding: 0; margin: 0; }
+.getting-started-links li { margin: 8px 0; }
+.getting-started-links a { color: var(--primary); text-decoration: none; }
+.getting-started-links a:hover { text-decoration: underline; }
+
+.table-wrap { overflow-x: auto; margin-top: 8px; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.data-table th { font-weight: 600; background: color-mix(in srgb, var(--bg) 50%, transparent); }
+.data-table .btn { padding: 4px 8px; font-size: 0.9rem; }
+
+.drawer-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.3); z-index: 1500;
+  display: flex; justify-content: flex-end;
+}
+.drawer-panel {
+  width: min(480px, 100vw); background: var(--surface, #fff); border-left: 1px solid var(--border);
+  padding: 24px; overflow-y: auto; box-shadow: -4px 0 20px rgba(0,0,0,.1);
+}
+.drawer-panel h2 { margin: 0 0 16px; font-size: 1.2rem; }
+.drawer-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+.drawer-tabs button {
+  padding: 8px 12px; background: none; border: none; cursor: pointer; font-weight: 500;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.drawer-tabs button[aria-selected="true"] { border-bottom-color: var(--primary); color: var(--primary); }
+.drawer-body { min-height: 120px; }
+.modal-wizard { max-width: 520px; }
+
+.analytics-filters-inner {
+  display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; align-items: center; max-width: 560px;
+}
+.analytics-filters-inner label { margin: 0; }
+.chart-placeholder p { margin: 0 0 8px; }
+.chart-box { height: 200px; background: color-mix(in srgb, var(--border) 40%, var(--bg)); border-radius: 8px; }
+.chart-box-wide { height: 180px; }
+
 .tiles .tile,
 .main > .tile {
   /* default accent falls back to theme accent */

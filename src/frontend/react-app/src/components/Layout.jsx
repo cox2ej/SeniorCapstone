@@ -89,6 +89,15 @@ export default function Layout() {
   const homePath = viewingInstructor ? '/instructor-dashboard' : '/student-dashboard'
   const navLinks = viewingInstructor ? [...instructorLinks, ...commonLinks] : [...studentLinks, ...commonLinks]
 
+  // When logged in as instructor (from backend), send to instructor dashboard
+  useEffect(() => {
+    if (!backendEnabled || !authUser) return
+    const role = (authUser.role || '').toLowerCase()
+    if ((role === 'instructor' || role === 'admin') && location.pathname === '/student-dashboard') {
+      navigate('/instructor-dashboard', { replace: true })
+    }
+  }, [backendEnabled, authUser, location.pathname, navigate])
+
   const unreadNotifications = useMemo(() => notifications.filter((n) => !n.is_read).length, [notifications])
 
   // Close mobile menu on route change and when viewport grows
@@ -168,6 +177,12 @@ export default function Layout() {
         <NavLink to={homePath} className="brand-large" onClick={() => setNavOpen(false)}>Peer Feedback App</NavLink>
         <p className="muted" style={{ marginTop: 12 }}>
           Logged in as <strong>{userDisplayName}</strong>
+          {viewingInstructor && (
+            <>
+              <br />
+              <span className="role-badge">Role: Instructor</span>
+            </>
+          )}
           {authError && backendEnabled && (
             <>
               <br />
@@ -187,6 +202,7 @@ export default function Layout() {
               }
             }}
             aria-label="Reset demo data"
+            style={{ marginTop: 8 }}
           >
             Reset demo data
           </button>
