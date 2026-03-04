@@ -43,6 +43,20 @@ export function useAssignmentsData() {
     return () => { cancelled = true }
   }, [backendEnabled])
 
+  const uploadAttachments = useCallback(async (assignmentId, files = []) => {
+    if (!backendEnabled || !files.length) return []
+    const uploaded = []
+    for (const file of files) {
+      if (!file) continue
+      const formData = new FormData()
+      formData.append('assignment', assignmentId)
+      formData.append('file', file)
+      const attachment = await apiPost('/attachments/', formData)
+      uploaded.push(attachment)
+    }
+    return uploaded
+  }, [backendEnabled])
+
   const createAssignment = useCallback(async (payload) => {
     if (!payload?.title) throw new Error('Title is required')
 
@@ -51,23 +65,31 @@ export function useAssignmentsData() {
       return null
     }
 
+    const { attachments: attachmentFiles = [], ...restPayload } = payload
     const courseId = payload.course ?? DEFAULT_COURSE_ID
     if (!courseId) {
       throw new Error('Set VITE_DEFAULT_COURSE_ID to a valid backend course id to post assignments.')
     }
 
     const created = await apiPost('/assignments/', {
-      title: payload.title,
-      description: payload.description || '',
+      title: restPayload.title,
+      description: restPayload.description || '',
       allow_self_assessment: true,
       anonymize_reviewers: true,
       rubric: {},
-      ...payload,
+      ...restPayload,
       course: courseId,
     })
-    setRemoteAssignments(prev => [created, ...prev])
-    return created
-  }, [backendEnabled, mockStore])
+
+    let result = created
+    if (attachmentFiles.length) {
+      const uploaded = await uploadAttachments(created.id, Array.from(attachmentFiles))
+      result = { ...created, attachments: uploaded }
+    }
+
+    setRemoteAssignments(prev => [result, ...prev])
+    return result
+  }, [backendEnabled, mockStore, uploadAttachments])
 
   const assignments = useMemo(() => (
     backendEnabled ? remoteAssignments : mockStore.assignments
