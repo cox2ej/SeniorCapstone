@@ -53,6 +53,35 @@ class NotificationAPITests(APITestCase):
     self.assertIn(Notification.Types.FEEDBACK_RECEIVED, verbs)
     self.assertIn(Notification.Types.FEEDBACK_GIVEN, verbs)
 
+  def test_anonymized_feedback_notification_hides_reviewer_identity(self):
+    assignment = Assignment.objects.create(
+      course=self.course,
+      created_by=self.student,
+      title='Anonymous Draft',
+      anonymize_reviewers=True,
+    )
+    self.authenticate(self.reviewer)
+    payload = {
+      'assignment': assignment.id,
+      'rating': 4,
+      'comments': 'Anonymous note',
+    }
+
+    response = self.client.post(self.feedback_url, payload, format='json')
+
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    self.authenticate(self.student)
+    list_response = self.client.get(self.notifications_url)
+    self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+    received_notification = next(item for item in list_response.data if item['verb'] == Notification.Types.FEEDBACK_RECEIVED)
+
+    self.assertIsNone(received_notification['actor'])
+    self.assertIsNone(received_notification['recipient'])
+    self.assertIn('A classmate', received_notification['message'])
+    self.assertIsNone(received_notification['assignment']['created_by'])
+    self.assertIsNone(received_notification['feedback']['reviewer_user'])
+
   def test_list_and_mark_read_endpoints(self):
     notification = Notification.objects.create(
       recipient=self.student,
@@ -72,6 +101,8 @@ class NotificationAPITests(APITestCase):
     list_response = self.client.get(self.notifications_url)
     self.assertEqual(list_response.status_code, status.HTTP_200_OK)
     self.assertEqual(len(list_response.data), 2)
+    self.assertTrue(all(item['actor'] is None for item in list_response.data))
+    self.assertTrue(all(item['recipient'] is None for item in list_response.data))
 
     mark_url = reverse('notification-mark-read', args=[notification.id])
     mark_response = self.client.post(mark_url)

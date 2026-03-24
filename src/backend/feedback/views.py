@@ -29,7 +29,12 @@ class AssignmentReviewerViewSet(viewsets.ReadOnlyModelViewSet):
     if assignment_id:
       qs = qs.filter(assignment_id=assignment_id)
     if user_id:
-      qs = qs.filter(user_id=user_id)
+      if user and user.is_staff:
+        qs = qs.filter(user_id=user_id)
+      elif user and str(user.id) == str(user_id):
+        qs = qs.filter(user_id=user_id)
+      else:
+        qs = qs.none()
     elif not (user and user.is_staff):
       if user:
         qs = qs.filter(user=user)

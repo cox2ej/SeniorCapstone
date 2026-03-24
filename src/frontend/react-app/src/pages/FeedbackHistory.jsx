@@ -41,9 +41,7 @@ export default function FeedbackHistory() {
   const getReviewerLabel = (review) => {
     return review.reviewer_alias
       || review.reviewer_user?.display_name
-      || users[review.reviewer]?.name
-      || review.reviewer
-      || 'Reviewer'
+      || 'Anonymous reviewer'
   }
 
   const getTimestamp = (item) => item.submitted_at || item.updated_at || item.createdAt || item.created_at

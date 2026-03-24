@@ -5,7 +5,7 @@ from .models import Assignment, AssignmentAttachment, Course, CourseRubricTempla
 
 
 class CourseSerializer(serializers.ModelSerializer):
-  instructor = UserSerializer(read_only=True)
+  instructor = serializers.SerializerMethodField()
 
   class Meta:
     model = Course
@@ -15,14 +15,46 @@ class CourseSerializer(serializers.ModelSerializer):
     ]
     read_only_fields = ['id', 'created_at', 'updated_at', 'instructor']
 
+  def _can_view_user_identity(self):
+    request = self.context.get('request')
+    request_user = getattr(request, 'user', None)
+    if request_user is None:
+      return False
+    return bool(
+      getattr(request_user, 'is_staff', False)
+      or getattr(request_user, 'is_instructor', False)
+      or getattr(request_user, 'role', None) == 'admin'
+    )
+
+  def get_instructor(self, obj):
+    if not self._can_view_user_identity():
+      return None
+    return UserSerializer(obj.instructor, context=self.context).data
+
 
 class EnrollmentSerializer(serializers.ModelSerializer):
-  user = UserSerializer(read_only=True)
+  user = serializers.SerializerMethodField()
 
   class Meta:
     model = Enrollment
     fields = ['id', 'course', 'user', 'role', 'joined_at']
     read_only_fields = ['id', 'user', 'joined_at']
+
+  def _can_view_user_identity(self):
+    request = self.context.get('request')
+    request_user = getattr(request, 'user', None)
+    if request_user is None:
+      return False
+    return bool(
+      getattr(request_user, 'is_staff', False)
+      or getattr(request_user, 'is_instructor', False)
+      or getattr(request_user, 'role', None) == 'admin'
+    )
+
+  def get_user(self, obj):
+    if not self._can_view_user_identity():
+      return None
+    return UserSerializer(obj.user, context=self.context).data
 
 
 class CourseRubricTemplateSerializer(serializers.ModelSerializer):
@@ -33,17 +65,35 @@ class CourseRubricTemplateSerializer(serializers.ModelSerializer):
 
 
 class AssignmentAttachmentSerializer(serializers.ModelSerializer):
-  uploaded_by = UserSerializer(read_only=True)
+  uploaded_by = serializers.SerializerMethodField()
 
   class Meta:
     model = AssignmentAttachment
     fields = ['id', 'assignment', 'file', 'original_name', 'uploaded_by', 'uploaded_at']
     read_only_fields = ['id', 'uploaded_by', 'uploaded_at']
 
+  def _can_view_user_identity(self):
+    request = self.context.get('request')
+    request_user = getattr(request, 'user', None)
+    if request_user is None:
+      return False
+    return bool(
+      getattr(request_user, 'is_staff', False)
+      or getattr(request_user, 'is_instructor', False)
+      or getattr(request_user, 'role', None) == 'admin'
+    )
+
+  def get_uploaded_by(self, obj):
+    if not self._can_view_user_identity():
+      return None
+    if obj.uploaded_by is None:
+      return None
+    return UserSerializer(obj.uploaded_by, context=self.context).data
+
 
 class AssignmentSerializer(serializers.ModelSerializer):
   course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all())
-  created_by = UserSerializer(read_only=True)
+  created_by = serializers.SerializerMethodField()
   rubric_template = serializers.PrimaryKeyRelatedField(
     queryset=CourseRubricTemplate.objects.select_related('course'),
     required=False,
@@ -60,6 +110,24 @@ class AssignmentSerializer(serializers.ModelSerializer):
       'created_at', 'updated_at', 'attachments'
     ]
     read_only_fields = ['id', 'created_by', 'created_at', 'updated_at', 'attachments', 'rubric_template_detail']
+
+  def _can_view_user_identity(self):
+    request = self.context.get('request')
+    request_user = getattr(request, 'user', None)
+    if request_user is None:
+      return False
+    return bool(
+      getattr(request_user, 'is_staff', False)
+      or getattr(request_user, 'is_instructor', False)
+      or getattr(request_user, 'role', None) == 'admin'
+    )
+
+  def get_created_by(self, obj):
+    if not self._can_view_user_identity():
+      return None
+    if obj.created_by is None:
+      return None
+    return UserSerializer(obj.created_by, context=self.context).data
 
   def validate(self, attrs):
     course = attrs.get('course') or getattr(self.instance, 'course', None)

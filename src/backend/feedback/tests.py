@@ -107,6 +107,93 @@ class FeedbackSubmissionAPITests(APITestCase):
     self.assertIn('rubric_scores', response.data)
     self.assertIn('clarity', response.data['rubric_scores'])
 
+  def test_assignment_reviewer_list_redacts_user_identity_for_student(self):
+    self.authenticate(self.student)
+    AssignmentReviewer.objects.create(assignment=self.assignment, user=self.student)
+    AssignmentReviewer.objects.create(assignment=self.assignment, user=self.other_student)
+
+    url = reverse('assignment-reviewer-list')
+    response = self.client.get(url, {'assignment': self.assignment.id})
+
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+    self.assertEqual(len(response.data), 1)
+    self.assertIsNone(response.data[0]['user'])
+    self.assertIsNone(response.data[0]['assignment']['created_by'])
+
+  def test_self_assessment_owner_is_redacted_for_student_view(self):
+    self.authenticate(self.student)
+    url = reverse('self-assessment-list')
+    create_response = self.client.post(url, {
+      'assignment': self.assignment.id,
+      'rating': 3,
+      'comments': 'Self reflection',
+    }, format='json')
+    self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+
+    list_response = self.client.get(url)
+    self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+    self.assertEqual(len(list_response.data), 1)
+    self.assertIsNone(list_response.data[0]['owner'])
+
+  def test_received_feedback_hides_reviewer_user_when_anonymized(self):
+    self.authenticate(self.student)
+    create_payload = {
+      'assignment': self.assignment.id,
+      'rating': 4,
+      'comments': 'Anonymous feedback',
+      'rubric_scores': {'clarity': 4},
+    }
+    create_response = self.client.post(self.url, create_payload, format='json')
+    self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+    feedback_id = create_response.data['id']
+
+    self.authenticate(self.other_student)
+    detail_url = reverse('feedback-detail', args=[feedback_id])
+    response = self.client.get(detail_url)
+
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+    self.assertNotIn('reviewer', response.data)
+    self.assertIsNone(response.data['reviewer_user'])
+    self.assertIsNone(response.data['reviewer_alias'])
+    self.assertNotIn('created_by', response.data['assignment_detail'])
+
+    self.authenticate(self.student)
+    reviewer_view_response = self.client.get(detail_url)
+    self.assertEqual(reviewer_view_response.status_code, status.HTTP_200_OK)
+    self.assertNotIn('reviewer', reviewer_view_response.data)
+    self.assertIsNone(reviewer_view_response.data['reviewer_user'])
+    self.assertIsNone(reviewer_view_response.data['reviewer_alias'])
+    self.assertNotIn('created_by', reviewer_view_response.data['assignment_detail'])
+
+  def test_received_feedback_hides_reviewer_user_for_non_staff_when_not_anonymized(self):
+    non_anonymous_assignment = Assignment.objects.create(
+      course=self.course,
+      created_by=self.other_student,
+      title='Visible Reviewer Draft',
+      anonymize_reviewers=False,
+      rubric={'criteria': [{'id': 'clarity', 'label': 'Clarity', 'required': False, 'min_score': 1, 'max_score': 5}]},
+    )
+    self.authenticate(self.student)
+    create_payload = {
+      'assignment': non_anonymous_assignment.id,
+      'rating': 4,
+      'comments': 'Named feedback',
+      'rubric_scores': {'clarity': 4},
+    }
+    create_response = self.client.post(self.url, create_payload, format='json')
+    self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+    feedback_id = create_response.data['id']
+
+    self.authenticate(self.other_student)
+    detail_url = reverse('feedback-detail', args=[feedback_id])
+    response = self.client.get(detail_url)
+
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+    self.assertNotIn('reviewer', response.data)
+    self.assertIsNone(response.data['reviewer_user'])
+    self.assertIsNone(response.data['reviewer_alias'])
+    self.assertNotIn('created_by', response.data['assignment_detail'])
+
   def test_rubric_scores_must_respect_range(self):
     self.authenticate(self.student)
     payload = {

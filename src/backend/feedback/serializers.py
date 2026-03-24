@@ -7,19 +7,40 @@ from .models import AssignmentReviewer, FeedbackAnalytics, FeedbackSubmission, S
 
 class AssignmentReviewerSerializer(serializers.ModelSerializer):
   assignment = AssignmentSerializer(read_only=True)
-  user = UserSerializer(read_only=True)
+  user = serializers.SerializerMethodField()
 
   class Meta:
     model = AssignmentReviewer
     fields = ['id', 'assignment', 'user', 'alias', 'assigned_at']
     read_only_fields = ['id', 'assignment', 'user', 'alias', 'assigned_at']
 
+  def _can_view_user_identity(self):
+    request = self.context.get('request')
+    request_user = getattr(request, 'user', None)
+    if request_user is None:
+      return False
+    return bool(
+      getattr(request_user, 'is_staff', False)
+      or getattr(request_user, 'is_instructor', False)
+      or getattr(request_user, 'role', None) == 'admin'
+    )
+
+  def get_user(self, obj):
+    if not self._can_view_user_identity():
+      return None
+    return UserSerializer(obj.user, context=self.context).data
+
 
 class FeedbackSubmissionSerializer(serializers.ModelSerializer):
-  reviewer = serializers.PrimaryKeyRelatedField(queryset=AssignmentReviewer.objects.all(), required=False, allow_null=True)
-  reviewer_alias = serializers.CharField(source='reviewer.alias', read_only=True)
-  assignment_detail = AssignmentSerializer(source='assignment', read_only=True)
-  reviewer_user = UserSerializer(source='reviewer.user', read_only=True)
+  reviewer = serializers.PrimaryKeyRelatedField(
+    queryset=AssignmentReviewer.objects.all(),
+    required=False,
+    allow_null=True,
+    write_only=True,
+  )
+  reviewer_alias = serializers.SerializerMethodField()
+  assignment_detail = serializers.SerializerMethodField()
+  reviewer_user = serializers.SerializerMethodField()
 
   class Meta:
     model = FeedbackSubmission
@@ -28,6 +49,9 @@ class FeedbackSubmissionSerializer(serializers.ModelSerializer):
       'rating', 'comments', 'rubric_scores', 'status', 'submitted_at', 'updated_at'
     ]
     read_only_fields = ['id', 'assignment_detail', 'reviewer_alias', 'reviewer_user', 'submitted_at', 'updated_at']
+    extra_kwargs = {
+      'reviewer': {'write_only': True},
+    }
 
   def validate_rating(self, value):
     if value < 1 or value > 5:
@@ -92,14 +116,73 @@ class FeedbackSubmissionSerializer(serializers.ModelSerializer):
 
     return errors or None
 
+  def _can_view_user_identity(self):
+    request = self.context.get('request')
+    request_user = getattr(request, 'user', None)
+    return bool(
+      getattr(request_user, 'is_staff', False)
+      or getattr(request_user, 'is_instructor', False)
+      or getattr(request_user, 'role', None) == 'admin'
+    )
+
+  def get_assignment_detail(self, obj):
+    data = AssignmentSerializer(obj.assignment, context=self.context).data
+    if not self._can_view_user_identity() and isinstance(data, dict):
+      data.pop('created_by', None)
+    return data
+
+  def get_reviewer_alias(self, obj):
+    if not self._can_view_user_identity():
+      return None
+    reviewer = getattr(obj, 'reviewer', None)
+    return getattr(reviewer, 'alias', None)
+
+  def get_reviewer_user(self, obj):
+    reviewer = getattr(obj, 'reviewer', None)
+    reviewer_user = getattr(reviewer, 'user', None)
+    if reviewer_user is None:
+      return None
+
+    if not self._can_view_user_identity():
+      return None
+
+    return UserSerializer(reviewer_user, context=self.context).data
+
+  def to_representation(self, instance):
+    data = super().to_representation(instance)
+    if not self._can_view_user_identity():
+      data.pop('reviewer', None)
+      data['reviewer_alias'] = None
+      data['reviewer_user'] = None
+      assignment_detail = data.get('assignment_detail')
+      if isinstance(assignment_detail, dict):
+        assignment_detail.pop('created_by', None)
+    return data
+
 
 class SelfAssessmentSerializer(serializers.ModelSerializer):
-  owner = UserSerializer(read_only=True)
+  owner = serializers.SerializerMethodField()
 
   class Meta:
     model = SelfAssessment
     fields = ['id', 'assignment', 'owner', 'rating', 'comments', 'submitted_at']
     read_only_fields = ['id', 'owner', 'submitted_at']
+
+  def _can_view_user_identity(self):
+    request = self.context.get('request')
+    request_user = getattr(request, 'user', None)
+    if request_user is None:
+      return False
+    return bool(
+      getattr(request_user, 'is_staff', False)
+      or getattr(request_user, 'is_instructor', False)
+      or getattr(request_user, 'role', None) == 'admin'
+    )
+
+  def get_owner(self, obj):
+    if not self._can_view_user_identity():
+      return None
+    return UserSerializer(obj.owner, context=self.context).data
 
 
 class FeedbackAnalyticsSerializer(serializers.ModelSerializer):
