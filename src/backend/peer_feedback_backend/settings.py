@@ -175,19 +175,27 @@ REST_FRAMEWORK = {
     },
 }
 
+cors_allowed_origins_env = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173')
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
+    for origin in cors_allowed_origins_env.split(',')
     if origin.strip()
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
+csrf_trusted_origins_env = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173')
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
-    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173').split(',')
+    for origin in csrf_trusted_origins_env.split(',')
     if origin.strip()
 ]
+
+if not DEBUG:
+    if not CORS_ALLOWED_ORIGINS or CORS_ALLOWED_ORIGINS == ['http://localhost:5173']:
+        raise ImproperlyConfigured('Set CORS_ALLOWED_ORIGINS to explicit non-localhost origins in non-debug environments.')
+    if not CSRF_TRUSTED_ORIGINS or CSRF_TRUSTED_ORIGINS == ['http://localhost:5173']:
+        raise ImproperlyConfigured('Set CSRF_TRUSTED_ORIGINS to explicit non-localhost origins in non-debug environments.')
 
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
