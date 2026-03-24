@@ -6,14 +6,17 @@ from .models import Notification
 def notify_feedback_submission(submission):
   assignment = submission.assignment
   reviewer = submission.reviewer.user if submission.reviewer else None
+  anonymized = bool(getattr(assignment, 'anonymize_reviewers', False))
 
   if assignment and assignment.created_by and assignment.created_by != reviewer:
+    actor = None if anonymized else reviewer
+    reviewer_label = _('A classmate') if anonymized else (get_display_name(reviewer) or _('Someone'))
     Notification.objects.create(
       recipient=assignment.created_by,
-      actor=reviewer,
+      actor=actor,
       verb=Notification.Types.FEEDBACK_RECEIVED,
       message=_('{reviewer} reviewed {title}').format(
-        reviewer=get_display_name(reviewer) or _('Someone'),
+        reviewer=reviewer_label,
         title=assignment.title,
       ),
       assignment=assignment,

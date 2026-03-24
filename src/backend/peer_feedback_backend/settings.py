@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+from django.core.exceptions import ImproperlyConfigured
 
 from dotenv import load_dotenv
 
@@ -28,9 +29,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'local-dev-secret-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
+DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
+
+if not DEBUG and SECRET_KEY == 'local-dev-secret-key':
+    raise ImproperlyConfigured('DJANGO_SECRET_KEY must be set in non-debug environments.')
 
 ALLOWED_HOSTS = [host for host in os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if host] or ['localhost']
+
+if not DEBUG and ALLOWED_HOSTS == ['localhost']:
+    raise ImproperlyConfigured('Set DJANGO_ALLOWED_HOSTS for non-debug environments.')
 
 
 # Application definition
@@ -158,6 +165,14 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'user': os.getenv('DRF_USER_THROTTLE_RATE', '120/minute'),
+        'anon': os.getenv('DRF_ANON_THROTTLE_RATE', '30/minute'),
+    },
 }
 
 CORS_ALLOWED_ORIGINS = [
@@ -173,6 +188,11 @@ CSRF_TRUSTED_ORIGINS = [
     for origin in os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173').split(',')
     if origin.strip()
 ]
+
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

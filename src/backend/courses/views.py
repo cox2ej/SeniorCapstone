@@ -45,6 +45,18 @@ class AssignmentViewSet(viewsets.ModelViewSet):
 
   def get_queryset(self):
     qs = super().get_queryset()
+    user = self.request.user if self.request.user.is_authenticated else None
+    if not user:
+      return Assignment.objects.none()
+
+    can_view_all = bool(
+      getattr(user, 'is_staff', False)
+      or getattr(user, 'is_instructor', False)
+      or getattr(user, 'role', None) == 'admin'
+    )
+    if not can_view_all:
+      qs = qs.filter(course__enrollments__user=user).exclude(created_by=user).distinct()
+
     course_id = self.request.query_params.get('course')
     if course_id:
       qs = qs.filter(course_id=course_id)

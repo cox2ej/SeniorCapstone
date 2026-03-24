@@ -155,17 +155,6 @@ export default function GiveFeedback() {
     return () => window.clearTimeout(timeout)
   }, [matchMsg])
 
-  const ownerLabel = useMemo(() => {
-    if (!assignment) return ''
-    if (usingBackend) {
-      const owner = assignment.created_by
-      if (!owner) return ''
-      return owner.display_name || owner.full_name || owner.username || owner.email || ''
-    }
-    if (!assignment.owner) return ''
-    return users[assignment.owner]?.name || assignment.owner
-  }, [assignment, usingBackend, users])
-
   const handleRubricScoreChange = (criterionId, value) => {
     setRubricScores(prev => ({ ...prev, [criterionId]: value }))
     setRubricErrors(prev => {
@@ -345,7 +334,6 @@ export default function GiveFeedback() {
                           <li key={a.id}>
                             <strong>{a.title}</strong>
                             {a.description ? <div className="muted">{a.description}</div> : null}
-                            <div className="muted">Owner: {a.created_by?.display_name || a.created_by?.username || 'Classmate'}</div>
                             {reviewerMatchesMap[String(a.id)]?.assigned_at && (
                               <div className="muted">
                                 Assigned {new Date(reviewerMatchesMap[String(a.id)].assigned_at).toLocaleString()}
@@ -395,7 +383,6 @@ export default function GiveFeedback() {
                         <li key={a.id}>
                           <strong>{a.title}</strong>
                           {a.description ? <div className="muted">{a.description}</div> : null}
-                          <div className="muted">Owner: {a.created_by?.display_name || a.created_by?.username || 'Classmate'}</div>
                           {a.due_date && (
                             <div className="muted">Due {new Date(a.due_date).toLocaleString()}</div>
                           )}
@@ -481,9 +468,6 @@ export default function GiveFeedback() {
         <form onSubmit={onSubmit} noValidate aria-labelledby="give-feedback-title">
           <p id="assignment-context">
             <strong>Reviewing:</strong> {assignment.title}
-            {ownerLabel && (
-              <span className="muted"> (Owner: {ownerLabel})</span>
-            )}
           </p>
           {assignment.description ? (
             <p>{assignment.description}</p>

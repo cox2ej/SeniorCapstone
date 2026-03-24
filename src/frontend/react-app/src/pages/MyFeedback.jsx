@@ -4,7 +4,7 @@ import { useMockStore } from '../store/mockStore.js'
 import { useAssignmentsData } from '../hooks/useAssignmentsData.js'
 
 export default function MyFeedback() {
-  const { currentUser, getReviewsReceivedBy, getAssignmentById, users } = useMockStore()
+  const { currentUser, getReviewsReceivedBy, getAssignmentById } = useMockStore()
   const { backendEnabled, assignments, loading, error, createAssignment } = useAssignmentsData()
   const [title, setTitle] = useState('')
   const [desc, setDesc] = useState('')
@@ -238,7 +238,7 @@ export default function MyFeedback() {
                     <strong>{assignment?.title || 'Assignment'}</strong>
                     <div>Rating: {r.rating}</div>
                     {r.comments && <div>Comment: {r.comments}</div>}
-                    <div className="muted">Reviewer: {users[r.reviewer]?.name || r.reviewer}</div>
+                    <div className="muted">Reviewer: Anonymous reviewer</div>
                     {detailUrl && (
                       <div className="actions" style={{ marginTop: 8 }}>
                         <Link className="btn" to={detailUrl} aria-label={`View review details for ${assignment?.title || 'assignment'}`}>
