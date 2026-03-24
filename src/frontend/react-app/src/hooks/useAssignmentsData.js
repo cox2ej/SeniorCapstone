@@ -13,12 +13,13 @@ const DEFAULT_COURSE_ID = import.meta.env.VITE_DEFAULT_COURSE_ID
   ? Number(import.meta.env.VITE_DEFAULT_COURSE_ID)
   : null
 
-export function useAssignmentsData() {
+export function useAssignmentsData(options = {}) {
   const mockStore = useMockStore()
   const backendEnabled = isBackendEnabled()
   const [remoteAssignments, setRemoteAssignments] = useState([])
   const [loading, setLoading] = useState(backendEnabled)
   const [error, setError] = useState(null)
+  const query = options.query || ''
 
   useEffect(() => {
     if (!backendEnabled) return undefined
@@ -28,7 +29,8 @@ export function useAssignmentsData() {
       setLoading(true)
       setError(null)
       try {
-        const data = await apiGet('/assignments/')
+        const path = query ? `/assignments/?${query}` : '/assignments/'
+        const data = await apiGet(path)
         if (!cancelled) {
           setRemoteAssignments(normalizeList(data))
         }
@@ -41,7 +43,7 @@ export function useAssignmentsData() {
 
     fetchAssignments()
     return () => { cancelled = true }
-  }, [backendEnabled])
+  }, [backendEnabled, query])
 
   const uploadAttachments = useCallback(async (assignmentId, files = []) => {
     if (!backendEnabled || !files.length) return []

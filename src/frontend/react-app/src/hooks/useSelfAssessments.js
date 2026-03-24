@@ -30,12 +30,12 @@ export function useSelfAssessments(options = {}) {
     return () => { cancelled = true }
   }, [backendEnabled, assignmentId])
 
-  const submit = useCallback(async ({ assignmentId: aId, rating, comments }) => {
+  const submit = useCallback(async ({ assignmentId: aId, rating, comments, rubricScores = {} }) => {
     if (!aId) throw new Error('Assignment is required')
     if (!rating) throw new Error('Rating is required')
 
     if (!backendEnabled) {
-      mockStore.addSelfAssessment({ assignmentId: aId, rating: Number(rating), comments })
+      mockStore.addSelfAssessment({ assignmentId: aId, rating: Number(rating), comments, rubricScores })
       return null
     }
 
@@ -43,6 +43,7 @@ export function useSelfAssessments(options = {}) {
       assignment: aId,
       rating: Number(rating),
       comments: comments || '',
+      rubric_scores: rubricScores,
     }
     const created = await apiPost('/self-assessments/', payload)
     setRemoteItems(prev => [created, ...prev])

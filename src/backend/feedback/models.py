@@ -51,6 +51,7 @@ class SelfAssessment(models.Model):
   owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='self_assessments')
   rating = models.PositiveSmallIntegerField()
   comments = models.TextField(blank=True)
+  rubric_scores = models.JSONField(default=dict, blank=True)
   submitted_at = models.DateTimeField(auto_now_add=True)
 
   class Meta:
