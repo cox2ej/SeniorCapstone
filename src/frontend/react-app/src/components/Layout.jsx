@@ -59,6 +59,7 @@ export default function Layout() {
 
   const studentLinks = [
     { to: '/student-dashboard', label: 'Dashboard' },
+    { to: '/my-courses', label: 'My Courses' },
     { to: '/give-feedback', label: 'Give Feedback' },
     { to: '/my-feedback', label: 'My Feedback' },
     { to: '/self-assessment', label: 'Self-Assessment' },  

@@ -15,11 +15,16 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
   queryset = User.objects.all().order_by('id')
   serializer_class = UserSerializer
 
-  @action(detail=False, methods=['get'], url_path='me')
+  @action(detail=False, methods=['get', 'patch'], url_path='me')
   def me(self, request):
     user = request.user
     if not (user and user.is_authenticated):
       return Response({'detail': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
+    if request.method.lower() == 'patch':
+      serializer = self.get_serializer(user, data=request.data, partial=True)
+      serializer.is_valid(raise_exception=True)
+      serializer.save()
+      return Response(serializer.data)
     serializer = self.get_serializer(user)
     return Response(serializer.data)
 

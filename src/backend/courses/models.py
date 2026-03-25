@@ -58,6 +58,20 @@ class Assignment(models.Model):
     return f"{self.title} ({self.course.code})"
 
 
+class AssignmentDiscussionPost(models.Model):
+  assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='discussion_posts')
+  author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='assignment_discussion_posts')
+  body = models.TextField()
+  created_at = models.DateTimeField(auto_now_add=True)
+  updated_at = models.DateTimeField(auto_now=True)
+
+  class Meta:
+    ordering = ['created_at']
+
+  def __str__(self):
+    return f"Discussion post {self.id} on assignment {self.assignment_id}"
+
+
 def assignment_upload_to(instance, filename):
   return f"assignments/{instance.assignment_id}/{filename}"
 

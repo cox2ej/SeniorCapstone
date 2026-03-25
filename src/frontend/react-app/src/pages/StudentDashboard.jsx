@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { useMockStore } from '../store/mockStore.js'
 import { useDashboardSummary } from '../hooks/useDashboardSummary.js'
+import { useCoursesData } from '../hooks/useCoursesData.js'
 
 const formatAverage = (value) => {
   if (value == null || Number.isNaN(value)) return '—'
@@ -15,6 +16,7 @@ export default function StudentDashboard() {
   const myAssignments = getAssignmentsByOwner(currentUser)
   const reviewQueue = getAssignmentsForReview(currentUser)
   const { summary, loading: summaryLoading, error: summaryError, refresh } = useDashboardSummary()
+  const { courses, loading: coursesLoading, error: coursesError } = useCoursesData()
 
   const summaryStats = useMemo(() => ({
     pendingReviews: summary?.pending_reviews ?? 0,
@@ -89,9 +91,32 @@ export default function StudentDashboard() {
         </ul>
       </section>
 
-      <section className="tile" aria-labelledby="post-assignment-title">
-        <h2 id="post-assignment-title" className="tile-title">Post an assignment for review (demo)</h2>
+      <section className="tile" aria-labelledby="courses-title">
+        <h2 id="courses-title" className="tile-title">Your courses</h2>
         <div className="tile-content">
+          {coursesError ? (
+            <p className="error-text" role="alert">Unable to load courses: {coursesError.message}</p>
+          ) : coursesLoading ? (
+            <p>Loading courses…</p>
+          ) : courses.length === 0 ? (
+            <p>You are not enrolled in any courses yet.</p>
+          ) : (
+            <ul>
+              {courses.map((course) => (
+                <li key={course.id}>
+                  <strong>{course.code || 'Course'}</strong> — {course.title}
+                  {course.term ? <span className="muted"> ({course.term})</span> : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      <section className="tile" aria-labelledby="post-assignment-title">
+        <h2 id="post-assignment-title" className="tile-title">Post a non-course assignment for review (demo)</h2>
+        <div className="tile-content">
+          <p className="muted">Course assignments from instructors are available under My Courses.</p>
           <form onSubmit={onPost} noValidate>
             <label htmlFor="assn-title">Title</label>
             <input id="assn-title" name="assnTitle" value={title} onChange={(e) => setTitle(e.target.value)} required />
@@ -105,7 +130,7 @@ export default function StudentDashboard() {
       </section>
 
       <section className="tile" aria-labelledby="your-assn-title">
-        <h2 id="your-assn-title" className="tile-title">Your posted assignments</h2>
+        <h2 id="your-assn-title" className="tile-title">Your non-course posted assignments</h2>
         <div className="tile-content">
           {myAssignments.length === 0 ? (
             <p>No assignments posted yet.</p>
@@ -120,7 +145,7 @@ export default function StudentDashboard() {
       </section>
 
       <section className="tile" aria-labelledby="queue-title">
-        <h2 id="queue-title" className="tile-title">Assignments to review</h2>
+        <h2 id="queue-title" className="tile-title">Non-course assignments to review</h2>
         <div className="tile-content">
           {reviewQueue.length === 0 ? (
             <p>No assignments to review.</p>

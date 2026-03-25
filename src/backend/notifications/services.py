@@ -56,6 +56,22 @@ def notify_assignment_posted(assignment):
     )
 
 
+def notify_course_invited(course, recipient, actor=None, role='student'):
+  Notification.objects.create(
+    recipient=recipient,
+    actor=actor,
+    verb=Notification.Types.COURSE_INVITED,
+    message=_('You were invited to join {course}').format(course=course.title if course else _('a course')),
+    metadata={
+      'course_id': getattr(course, 'id', None),
+      'course_code': getattr(course, 'code', ''),
+      'course_title': getattr(course, 'title', ''),
+      'role': role,
+      'invite_status': 'pending',
+    },
+  )
+
+
 def get_display_name(user):
   if not user:
     return ''

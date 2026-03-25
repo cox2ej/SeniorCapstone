@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
+from accounts.models import User
 from accounts.serializers import UserSerializer
-from .models import Assignment, AssignmentAttachment, Course, CourseRubricTemplate, Enrollment
+from .models import Assignment, AssignmentAttachment, AssignmentDiscussionPost, Course, CourseRubricTemplate, Enrollment
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -34,10 +35,11 @@ class CourseSerializer(serializers.ModelSerializer):
 
 class EnrollmentSerializer(serializers.ModelSerializer):
   user = serializers.SerializerMethodField()
+  user_id = serializers.PrimaryKeyRelatedField(source='user', queryset=User.objects.all(), write_only=True, required=False)
 
   class Meta:
     model = Enrollment
-    fields = ['id', 'course', 'user', 'role', 'joined_at']
+    fields = ['id', 'course', 'user', 'user_id', 'role', 'joined_at']
     read_only_fields = ['id', 'user', 'joined_at']
 
   def _can_view_user_identity(self):
@@ -165,3 +167,30 @@ class AssignmentSerializer(serializers.ModelSerializer):
     if not obj.rubric_template:
       return None
     return CourseRubricTemplateSerializer(obj.rubric_template).data
+
+
+class AssignmentDiscussionPostSerializer(serializers.ModelSerializer):
+  author = serializers.SerializerMethodField()
+
+  class Meta:
+    model = AssignmentDiscussionPost
+    fields = ['id', 'assignment', 'author', 'body', 'created_at', 'updated_at']
+    read_only_fields = ['id', 'author', 'created_at', 'updated_at']
+
+  def _can_view_user_identity(self):
+    request = self.context.get('request')
+    request_user = getattr(request, 'user', None)
+    if request_user is None:
+      return False
+    return bool(
+      getattr(request_user, 'is_staff', False)
+      or getattr(request_user, 'is_instructor', False)
+      or getattr(request_user, 'role', None) == 'admin'
+    )
+
+  def get_author(self, obj):
+    if not self._can_view_user_identity():
+      return None
+    if obj.author is None:
+      return None
+    return UserSerializer(obj.author, context=self.context).data
