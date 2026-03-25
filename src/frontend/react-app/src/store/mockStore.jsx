@@ -56,12 +56,12 @@ export function MockStoreProvider({ children }) {
     }))
   }
 
-  const addSelfAssessment = ({ assignmentId, rating, comments }) => {
+  const addSelfAssessment = ({ assignmentId, rating, comments, rubricScores }) => {
     const id = 'sa_' + Math.random().toString(36).slice(2, 9)
     const createdAt = new Date().toISOString()
     setStore(s => ({
       ...s,
-      selfAssessments: [...s.selfAssessments, { id, assignmentId, rating: Number(rating), comments, owner: s.currentUser, createdAt }]
+      selfAssessments: [...s.selfAssessments, { id, assignmentId, rating: Number(rating), comments, rubricScores: rubricScores || {}, owner: s.currentUser, createdAt }]
     }))
   }
 

@@ -1,5 +1,7 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { apiGet } from '../api/client.js'
+import RubricMatrix from '../components/RubricMatrix.jsx'
 import { useMockStore } from '../store/mockStore.jsx'
 import { useAssignmentsData } from '../hooks/useAssignmentsData.js'
 import { useSelfAssessments } from '../hooks/useSelfAssessments.js'
@@ -7,10 +9,16 @@ import { useSelfAssessments } from '../hooks/useSelfAssessments.js'
 export default function SelfAssessment() {
   const [message, setMessage] = useState('')
   const [errors, setErrors] = useState([])
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState('')
+  const [rubricDetail, setRubricDetail] = useState(null)
+  const [rubricScores, setRubricScores] = useState({})
+  const [rubricErrors, setRubricErrors] = useState({})
+  const [rubricLoading, setRubricLoading] = useState(false)
+  const [rubricError, setRubricError] = useState(null)
   const errorSummaryRef = useRef(null)
   const navigate = useNavigate()
   const { currentUser, getAssignmentsByOwner } = useMockStore()
-  const { assignments, backendEnabled, loading: assignmentsLoading, error: assignmentsError } = useAssignmentsData()
+  const { assignments, backendEnabled, loading: assignmentsLoading, error: assignmentsError } = useAssignmentsData({ query: 'role=mine' })
   const { submit: submitAssessment, backendEnabled: assessmentsBackendEnabled, loading: saLoading, error: saError } = useSelfAssessments()
   const usingBackend = backendEnabled && assessmentsBackendEnabled
 
@@ -19,11 +27,71 @@ export default function SelfAssessment() {
     return getAssignmentsByOwner(currentUser)
   }, [usingBackend, assignments, getAssignmentsByOwner, currentUser])
 
+  const selectedAssignment = useMemo(
+    () => myAssignments.find((assignment) => String(assignment.id) === String(selectedAssignmentId)) || null,
+    [myAssignments, selectedAssignmentId],
+  )
+
+  const rubricCriteria = useMemo(() => {
+    const fromDetail = rubricDetail?.criteria
+    if (Array.isArray(fromDetail)) return fromDetail
+    const fromAssignment = selectedAssignment?.rubric?.criteria
+    if (Array.isArray(fromAssignment)) return fromAssignment
+    return []
+  }, [rubricDetail, selectedAssignment])
+
+  useEffect(() => {
+    if (!selectedAssignment) {
+      setRubricDetail(null)
+      setRubricLoading(false)
+      setRubricError(null)
+      return undefined
+    }
+    if (!usingBackend) {
+      setRubricDetail(selectedAssignment.rubric || selectedAssignment.rubric_template_detail?.definition || null)
+      setRubricLoading(false)
+      setRubricError(null)
+      return undefined
+    }
+
+    let cancelled = false
+    setRubricLoading(true)
+    setRubricError(null)
+    async function fetchRubric() {
+      try {
+        const data = await apiGet(`/assignments/${selectedAssignment.id}/rubric/`)
+        if (!cancelled) {
+          const fallback = selectedAssignment.rubric || selectedAssignment.rubric_template_detail?.definition || null
+          setRubricDetail(data?.rubric || fallback)
+        }
+      } catch (err) {
+        if (!cancelled) setRubricError(err)
+      } finally {
+        if (!cancelled) setRubricLoading(false)
+      }
+    }
+
+    fetchRubric()
+    return () => {
+      cancelled = true
+    }
+  }, [selectedAssignment, usingBackend])
+
+  const handleRubricScoreChange = (criterionId, value) => {
+    setRubricScores(prev => ({ ...prev, [criterionId]: value }))
+    setRubricErrors(prev => {
+      if (!prev[criterionId]) return prev
+      const next = { ...prev }
+      delete next[criterionId]
+      return next
+    })
+  }
+
   async function onSubmit(e) {
     e.preventDefault()
     const form = e.currentTarget
     const data = new FormData(form)
-    const assignment = data.get('assignment') || ''
+    const assignment = selectedAssignmentId || data.get('assignment') || ''
     const rating = data.get('rating') || ''
     const comments = data.get('comments') || ''
     const errs = []
@@ -31,14 +99,47 @@ export default function SelfAssessment() {
     const n = parseInt(String(rating), 10)
     if (!rating) errs.push({ field: 'sa-rating', message: 'Enter a rating from 1 to 5' })
     else if (isNaN(n) || n < 1 || n > 5) errs.push({ field: 'sa-rating', message: 'Rating must be a whole number from 1 to 5' })
-    if (errs.length) {
-      setErrors(errs)
+
+    const rubricIssues = {}
+    rubricCriteria.forEach((criterion) => {
+      const raw = rubricScores[criterion.id]
+      const hasValue = raw !== undefined && raw !== null && raw !== ''
+      const min = typeof criterion.min_score === 'number' ? criterion.min_score : 0
+      const max = typeof criterion.max_score === 'number' ? criterion.max_score : 5
+      if (!hasValue) {
+        if (criterion.required) rubricIssues[criterion.id] = 'Score required.'
+        return
+      }
+      const value = Number(raw)
+      if (Number.isNaN(value)) {
+        rubricIssues[criterion.id] = 'Enter a numeric score.'
+        return
+      }
+      if (value < min || value > max) {
+        rubricIssues[criterion.id] = `Score must be between ${min} and ${max}.`
+      }
+    })
+
+    if (errs.length || Object.keys(rubricIssues).length) {
+      const rubricErrorList = Object.entries(rubricIssues).map(([criterionId, rubricMessage]) => {
+        const label = rubricCriteria.find(c => c.id === criterionId)?.label || 'Criterion'
+        return { field: `rubric-${criterionId}`, message: `${label}: ${rubricMessage}` }
+      })
+      setRubricErrors(rubricIssues)
+      setErrors([...errs, ...rubricErrorList])
       setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
       return
     }
+    setRubricErrors({})
 
     try {
-      await submitAssessment({ assignmentId: assignment, rating: n, comments })
+      const rubricScorePayload = rubricCriteria.reduce((acc, criterion) => {
+        const raw = rubricScores[criterion.id]
+        if (raw === undefined || raw === null || raw === '') return acc
+        acc[criterion.id] = Number(raw)
+        return acc
+      }, {})
+      await submitAssessment({ assignmentId: assignment, rating: n, comments, rubricScores: rubricScorePayload })
       navigate('/student-dashboard')
     } catch (err) {
       setErrors([{ field: 'sa-rating', message: err.message || 'Unable to submit self-assessment.' }])
@@ -58,18 +159,37 @@ export default function SelfAssessment() {
       <section className="tile" aria-labelledby="sa-rubric-heading">
         <h2 id="sa-rubric-heading" className="tile-title">Rubric & Attachments</h2>
         <div className="tile-content">
-          <h3>Rubric (placeholder)</h3>
-          <ul>
-            <li><strong>Clarity &amp; Organization</strong>: 1–5 — Is your reflection easy to follow and well structured?</li>
-            <li><strong>Specificity</strong>: 1–5 — Do you reference concrete examples?</li>
-            <li><strong>Actionability</strong>: 1–5 — Do you include next steps?</li>
-            <li><strong>Professionalism</strong>: 1–5 — Is the tone respectful and objective?</li>
-          </ul>
-          <h3>Attachments (placeholder)</h3>
-          <ul>
-            <li><a href="#" aria-label="Download assignment brief (mock)">Assignment brief (PDF)</a></li>
-            <li><a href="#" aria-label="Download rubric (mock)">Rubric (PDF)</a></li>
-          </ul>
+          {!selectedAssignment ? (
+            <p className="muted">Select an assignment to load its rubric.</p>
+          ) : rubricLoading ? (
+            <p className="muted">Loading rubric…</p>
+          ) : rubricError ? (
+            <p className="help-error" role="alert">Unable to load rubric: {rubricError.message || 'Unknown error.'}</p>
+          ) : (
+            <>
+              <h3>Rubric</h3>
+              <p className="muted">Choose a score row-by-row using the same rubric matrix used in peer review.</p>
+              <RubricMatrix
+                criteria={rubricCriteria}
+                selectedScores={rubricScores}
+                onScoreChange={handleRubricScoreChange}
+                errors={rubricErrors}
+                emptyLabel="This assignment does not define a rubric."
+              />
+              {Array.isArray(selectedAssignment.attachments) && selectedAssignment.attachments.length > 0 && (
+                <>
+                  <h3 style={{ marginTop: 16 }}>Attachments</h3>
+                  <ul>
+                    {selectedAssignment.attachments.map((attachment) => (
+                      <li key={attachment.id}>
+                        <a href={attachment.file} target="_blank" rel="noreferrer">{attachment.original_name || 'Attachment'}</a>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </>
+          )}
         </div>
       </section>
 
@@ -90,7 +210,12 @@ export default function SelfAssessment() {
           id="sa-assignment"
           name="assignment"
           required
-          defaultValue=""
+          value={selectedAssignmentId}
+          onChange={(event) => {
+            setSelectedAssignmentId(event.target.value)
+            setRubricScores({})
+            setRubricErrors({})
+          }}
           aria-invalid={errors.some(e => e.field === 'sa-assignment') ? 'true' : 'false'}
           aria-describedby={errors.some(e => e.field === 'sa-assignment') ? 'sa-assignment-error' : undefined}
           className={errors.some(e => e.field === 'sa-assignment') ? 'input-error' : undefined}

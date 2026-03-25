@@ -165,8 +165,57 @@ class SelfAssessmentSerializer(serializers.ModelSerializer):
 
   class Meta:
     model = SelfAssessment
-    fields = ['id', 'assignment', 'owner', 'rating', 'comments', 'submitted_at']
+    fields = ['id', 'assignment', 'owner', 'rating', 'comments', 'rubric_scores', 'submitted_at']
     read_only_fields = ['id', 'owner', 'submitted_at']
+
+  def validate_rating(self, value):
+    if value < 1 or value > 5:
+      raise serializers.ValidationError('Rating must be between 1 and 5.')
+    return value
+
+  def validate(self, attrs):
+    assignment = attrs.get('assignment') or getattr(self.instance, 'assignment', None)
+    rubric_scores = attrs.get('rubric_scores') or getattr(self.instance, 'rubric_scores', {})
+    if assignment is None:
+      raise serializers.ValidationError({'assignment': 'Assignment is required.'})
+
+    rubric_errors = self._validate_rubric_scores(assignment, rubric_scores)
+    if rubric_errors:
+      raise serializers.ValidationError({'rubric_scores': rubric_errors})
+    return attrs
+
+  def _validate_rubric_scores(self, assignment, rubric_scores):
+    rubric = assignment.rubric or {}
+    criteria = rubric.get('criteria') or []
+    if not criteria:
+      return None
+    if not isinstance(rubric_scores, dict):
+      return 'Must be an object mapping criterion ids to numeric scores.'
+
+    errors = {}
+    for criterion in criteria:
+      key = criterion.get('id') or criterion.get('key') or criterion.get('label')
+      if not key:
+        continue
+      required = criterion.get('required', False)
+      max_score = criterion.get('max_score') or criterion.get('maxScore') or 5
+      min_score = criterion.get('min_score') or criterion.get('minScore') or 0
+      score = rubric_scores.get(key)
+      if score is None:
+        if required:
+          errors[key] = 'This criterion is required.'
+        continue
+      try:
+        numeric_score = float(score)
+      except (TypeError, ValueError):
+        errors[key] = 'Score must be a number.'
+        continue
+      if numeric_score < min_score or numeric_score > max_score:
+        errors[key] = f'Score must be between {min_score} and {max_score}.'
+      else:
+        rubric_scores[key] = numeric_score
+
+    return errors or None
 
   def _can_view_user_identity(self):
     request = self.context.get('request')

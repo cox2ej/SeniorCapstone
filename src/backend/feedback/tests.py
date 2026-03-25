@@ -127,6 +127,7 @@ class FeedbackSubmissionAPITests(APITestCase):
       'assignment': self.assignment.id,
       'rating': 3,
       'comments': 'Self reflection',
+      'rubric_scores': {'clarity': 3},
     }, format='json')
     self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
 
@@ -134,6 +135,36 @@ class FeedbackSubmissionAPITests(APITestCase):
     self.assertEqual(list_response.status_code, status.HTTP_200_OK)
     self.assertEqual(len(list_response.data), 1)
     self.assertIsNone(list_response.data[0]['owner'])
+
+  def test_self_assessment_requires_required_rubric_scores(self):
+    self.authenticate(self.student)
+    url = reverse('self-assessment-list')
+
+    response = self.client.post(url, {
+      'assignment': self.assignment.id,
+      'rating': 4,
+      'comments': 'Missing required criterion',
+      'rubric_scores': {'depth': 5},
+    }, format='json')
+
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    self.assertIn('rubric_scores', response.data)
+    self.assertIn('clarity', response.data['rubric_scores'])
+
+  def test_self_assessment_stores_rubric_scores(self):
+    self.authenticate(self.student)
+    url = reverse('self-assessment-list')
+
+    create_response = self.client.post(url, {
+      'assignment': self.assignment.id,
+      'rating': 4,
+      'comments': 'Rubric included',
+      'rubric_scores': {'clarity': 4, 'depth': 8},
+    }, format='json')
+
+    self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+    self.assertEqual(create_response.data['rubric_scores']['clarity'], 4)
+    self.assertEqual(create_response.data['rubric_scores']['depth'], 8)
 
   def test_received_feedback_hides_reviewer_user_when_anonymized(self):
     self.authenticate(self.student)
