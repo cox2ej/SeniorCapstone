@@ -81,6 +81,13 @@ export function NotificationsProvider({ children }) {
     setItems(prev => prev.map(item => ({ ...item, is_read: true })))
   }, [backendEnabled])
 
+  const respondToCourseInvite = useCallback(async (id, decision) => {
+    if (!backendEnabled) return
+    const updated = await apiPost(`/notifications/${id}/course-invite-respond/`, { decision })
+    setItems(prev => prev.map(item => (item.id === id ? updated : item)))
+    return updated
+  }, [backendEnabled])
+
   useEffect(() => {
     if (!backendEnabled) {
       setItems(mockNotifications)
@@ -121,7 +128,8 @@ export function NotificationsProvider({ children }) {
     refresh,
     markRead,
     markAllRead,
-  }), [backendEnabled, items, mockNotifications, loading, error, refresh, markRead, markAllRead])
+    respondToCourseInvite,
+  }), [backendEnabled, items, mockNotifications, loading, error, refresh, markRead, markAllRead, respondToCourseInvite])
 
   return React.createElement(NotificationsContext.Provider, { value }, children)
 }

@@ -114,3 +114,51 @@ class NotificationAPITests(APITestCase):
     mark_all_response = self.client.post(mark_all_url)
     self.assertEqual(mark_all_response.status_code, status.HTTP_200_OK)
     self.assertEqual(mark_all_response.data['updated'], 1)
+
+  def test_course_invite_accept_creates_enrollment(self):
+    invite_course = Course.objects.create(code='ENG301', title='Invite Course', instructor=self.instructor)
+    notification = Notification.objects.create(
+      recipient=self.student,
+      actor=self.instructor,
+      verb=Notification.Types.COURSE_INVITED,
+      message='Invite',
+      metadata={
+        'course_id': invite_course.id,
+        'role': Enrollment.Roles.STUDENT,
+        'invite_status': 'pending',
+      },
+    )
+    self.authenticate(self.student)
+
+    respond_url = reverse('notification-course-invite-respond', args=[notification.id])
+    response = self.client.post(respond_url, {'decision': 'accept'}, format='json')
+
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+    self.assertTrue(Enrollment.objects.filter(course=invite_course, user=self.student).exists())
+    notification.refresh_from_db()
+    self.assertEqual(notification.metadata.get('invite_status'), 'accepted')
+    self.assertTrue(notification.is_read)
+
+  def test_course_invite_decline_does_not_create_enrollment(self):
+    invite_course = Course.objects.create(code='ENG302', title='Invite Course 2', instructor=self.instructor)
+    notification = Notification.objects.create(
+      recipient=self.student,
+      actor=self.instructor,
+      verb=Notification.Types.COURSE_INVITED,
+      message='Invite',
+      metadata={
+        'course_id': invite_course.id,
+        'role': Enrollment.Roles.STUDENT,
+        'invite_status': 'pending',
+      },
+    )
+    self.authenticate(self.student)
+
+    respond_url = reverse('notification-course-invite-respond', args=[notification.id])
+    response = self.client.post(respond_url, {'decision': 'decline'}, format='json')
+
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+    self.assertFalse(Enrollment.objects.filter(course=invite_course, user=self.student).exists())
+    notification.refresh_from_db()
+    self.assertEqual(notification.metadata.get('invite_status'), 'declined')
+    self.assertTrue(notification.is_read)

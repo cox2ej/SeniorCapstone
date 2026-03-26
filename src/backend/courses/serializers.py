@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
+from accounts.models import User
 from accounts.serializers import UserSerializer
-from .models import Assignment, AssignmentAttachment, Course, CourseRubricTemplate, Enrollment
+from .models import Assignment, AssignmentAttachment, AssignmentDiscussionAttachment, AssignmentDiscussionPost, Course, CourseRubricTemplate, Enrollment
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -34,10 +35,11 @@ class CourseSerializer(serializers.ModelSerializer):
 
 class EnrollmentSerializer(serializers.ModelSerializer):
   user = serializers.SerializerMethodField()
+  user_id = serializers.PrimaryKeyRelatedField(source='user', queryset=User.objects.all(), write_only=True, required=False)
 
   class Meta:
     model = Enrollment
-    fields = ['id', 'course', 'user', 'role', 'joined_at']
+    fields = ['id', 'course', 'user', 'user_id', 'role', 'joined_at']
     read_only_fields = ['id', 'user', 'joined_at']
 
   def _can_view_user_identity(self):
@@ -165,3 +167,65 @@ class AssignmentSerializer(serializers.ModelSerializer):
     if not obj.rubric_template:
       return None
     return CourseRubricTemplateSerializer(obj.rubric_template).data
+
+
+class AssignmentDiscussionPostSerializer(serializers.ModelSerializer):
+  author = serializers.SerializerMethodField()
+  parent = serializers.PrimaryKeyRelatedField(queryset=AssignmentDiscussionPost.objects.all(), required=False, allow_null=True)
+  attachments = serializers.SerializerMethodField()
+
+  class Meta:
+    model = AssignmentDiscussionPost
+    fields = ['id', 'assignment', 'parent', 'author', 'body', 'created_at', 'updated_at', 'attachments']
+    read_only_fields = ['id', 'author', 'created_at', 'updated_at', 'attachments']
+
+  def _can_view_user_identity(self):
+    request = self.context.get('request')
+    request_user = getattr(request, 'user', None)
+    if request_user is None:
+      return False
+    return bool(
+      getattr(request_user, 'is_staff', False)
+      or getattr(request_user, 'is_instructor', False)
+      or getattr(request_user, 'role', None) == 'admin'
+    )
+
+  def get_author(self, obj):
+    if not self._can_view_user_identity():
+      return None
+    if obj.author is None:
+      return None
+    return UserSerializer(obj.author, context=self.context).data
+
+  def get_attachments(self, obj):
+    request = self.context.get('request')
+    attachments = obj.attachments.all()
+    serializer = AssignmentDiscussionAttachmentSerializer(attachments, many=True, context={'request': request})
+    return serializer.data
+
+
+class AssignmentDiscussionAttachmentSerializer(serializers.ModelSerializer):
+  uploaded_by = serializers.SerializerMethodField()
+
+  class Meta:
+    model = AssignmentDiscussionAttachment
+    fields = ['id', 'file', 'original_name', 'uploaded_by', 'uploaded_at']
+    read_only_fields = ['id', 'uploaded_by', 'uploaded_at']
+
+  def _can_view_user_identity(self):
+    request = self.context.get('request')
+    request_user = getattr(request, 'user', None)
+    if request_user is None:
+      return False
+    return bool(
+      getattr(request_user, 'is_staff', False)
+      or getattr(request_user, 'is_instructor', False)
+      or getattr(request_user, 'role', None) == 'admin'
+    )
+
+  def get_uploaded_by(self, obj):
+    if not self._can_view_user_identity():
+      return None
+    if obj.uploaded_by is None:
+      return None
+    return UserSerializer(obj.uploaded_by, context=self.context).data

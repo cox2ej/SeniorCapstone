@@ -58,6 +58,44 @@ class Assignment(models.Model):
     return f"{self.title} ({self.course.code})"
 
 
+class AssignmentDiscussionPost(models.Model):
+  assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='discussion_posts')
+  parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+  author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='assignment_discussion_posts')
+  body = models.TextField()
+  created_at = models.DateTimeField(auto_now_add=True)
+  updated_at = models.DateTimeField(auto_now=True)
+
+  class Meta:
+    ordering = ['created_at']
+
+  def __str__(self):
+    return f"Discussion post {self.id} on assignment {self.assignment_id}"
+
+
+def assignment_discussion_upload_to(instance, filename):
+  return f"assignment-discussions/{instance.post.id}/{filename}"
+
+
+class AssignmentDiscussionAttachment(models.Model):
+  post = models.ForeignKey(AssignmentDiscussionPost, on_delete=models.CASCADE, related_name='attachments')
+  file = models.FileField(upload_to=assignment_discussion_upload_to)
+  original_name = models.CharField(max_length=255, blank=True)
+  uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='discussion_attachments')
+  uploaded_at = models.DateTimeField(auto_now_add=True)
+
+  class Meta:
+    ordering = ['-uploaded_at']
+
+  def save(self, *args, **kwargs):
+    if not self.original_name and hasattr(self.file, 'name'):
+      self.original_name = self.file.name
+    return super().save(*args, **kwargs)
+
+  def __str__(self):
+    return f"Discussion attachment {self.id} for post {self.post_id}"
+
+
 def assignment_upload_to(instance, filename):
   return f"assignments/{instance.assignment_id}/{filename}"
 

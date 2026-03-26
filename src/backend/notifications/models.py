@@ -7,6 +7,7 @@ class Notification(models.Model):
     ASSIGNMENT_POSTED = 'assignment_posted', 'Assignment Posted'
     FEEDBACK_RECEIVED = 'feedback_received', 'Feedback Received'
     FEEDBACK_GIVEN = 'feedback_given', 'Feedback Given'
+    COURSE_INVITED = 'course_invited', 'Course Invited'
 
   recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
   actor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='actions_triggered')

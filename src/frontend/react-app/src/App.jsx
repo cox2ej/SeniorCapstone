@@ -11,6 +11,7 @@ import FeedbackHistory from './pages/FeedbackHistory.jsx'
 import ReviewDetails from './pages/ReviewDetails.jsx'
 import SelfAssessment from './pages/SelfAssessment.jsx'
 import SelfAssessmentDetails from './pages/SelfAssessmentDetails.jsx'
+import MyCourses from './pages/MyCourses.jsx'
 import Notifications from './pages/Notifications.jsx'
 import AboutHelp from './pages/AboutHelp.jsx'
 import Profile from './pages/Profile.jsx'
@@ -170,6 +171,7 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route element={<RequireAuth><Layout /></RequireAuth>}>
             <Route path="/student-dashboard" element={<StudentDashboard />} />
+            <Route path="/my-courses" element={<MyCourses />} />
             <Route path="/instructor-dashboard" element={<InstructorDashboard />} />
             <Route path="/give-feedback" element={<GiveFeedback />} />
             <Route path="/feedback-guidelines" element={<FeedbackGuidelines />} />
