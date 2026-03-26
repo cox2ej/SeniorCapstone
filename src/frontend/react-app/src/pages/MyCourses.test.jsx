@@ -75,7 +75,7 @@ describe('MyCourses', () => {
     await user.type(screen.getByLabelText('Post your assignment response'), 'Adding my revised response')
     await user.click(screen.getByRole('button', { name: 'Post to discussion' }))
 
-    expect(createPost).toHaveBeenCalledWith({ assignmentId: 77, body: 'Adding my revised response' })
+    expect(createPost).toHaveBeenCalledWith({ assignmentId: 77, body: 'Adding my revised response', files: [], parent: null })
     expect(screen.getByRole('link', { name: 'Back to dashboard' })).toBeInTheDocument()
   })
 })

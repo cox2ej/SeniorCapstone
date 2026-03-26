@@ -5,6 +5,93 @@ import { useCoursesData } from '../hooks/useCoursesData.js'
 import { useAssignmentsData } from '../hooks/useAssignmentsData.js'
 import { useAssignmentDiscussions } from '../hooks/useAssignmentDiscussions.js'
 
+function DiscussionPost({ post, onReply, depth = 0 }) {
+  const [replyBody, setReplyBody] = useState('')
+  const [showReplyForm, setShowReplyForm] = useState(false)
+  const [files, setFiles] = useState([])
+
+  const handleReply = async () => {
+    if (!replyBody.trim()) return
+    await onReply(post.assignment, post.id, replyBody, files)
+    setReplyBody('')
+    setFiles([])
+    setShowReplyForm(false)
+  }
+
+  const handleFileChange = (e) => {
+    setFiles(Array.from(e.target.files))
+  }
+
+  return (
+    <div style={{ marginLeft: depth * 20, marginTop: 12, padding: 12, border: '1px solid #ddd', borderRadius: 4 }}>
+      <div>{post.body}</div>
+      <small className="muted">
+        {post.created_at ? new Date(post.created_at).toLocaleString() : 'Just now'}
+      </small>
+      
+      {post.attachments && post.attachments.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <strong>Attachments:</strong>
+          <ul>
+            {post.attachments.map((attachment) => (
+              <li key={attachment.id}>
+                <a href={attachment.file} target="_blank" rel="noopener noreferrer">
+                  {attachment.original_name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div style={{ marginTop: 8 }}>
+        <button 
+          type="button" 
+          className="btn link" 
+          onClick={() => setShowReplyForm(!showReplyForm)}
+        >
+          Reply
+        </button>
+      </div>
+
+      {showReplyForm && (
+        <div style={{ marginTop: 12, padding: 12, backgroundColor: '#f9f9f9', borderRadius: 4 }}>
+          <textarea
+            rows={3}
+            value={replyBody}
+            onChange={(e) => setReplyBody(e.target.value)}
+            placeholder="Write your reply..."
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <input
+            type="file"
+            multiple
+            onChange={handleFileChange}
+            style={{ marginBottom: 8 }}
+          />
+          <div className="actions">
+            <button type="button" className="btn" onClick={handleReply}>
+              Post Reply
+            </button>
+            <button type="button" className="btn link" onClick={() => setShowReplyForm(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {post.replies && post.replies.map((reply) => (
+        <DiscussionPost 
+          key={reply.id} 
+          post={reply} 
+          onReply={onReply} 
+          depth={depth + 1} 
+        />
+      ))}
+    </div>
+  )
+}
+
 export default function MyCourses() {
   const [searchParams] = useSearchParams()
   const selectedCourseId = searchParams.get('courseId')
@@ -38,11 +125,10 @@ export default function MyCourses() {
     setDraftsByAssignment(prev => ({ ...prev, [assignmentId]: value }))
   }
 
-  const handlePost = async (assignmentId) => {
-    const body = draftsByAssignment[assignmentId] || ''
+  const handlePost = async (assignmentId, parent = null, body, files = []) => {
     setPostError('')
     try {
-      await createPost({ assignmentId, body })
+      await createPost({ assignmentId, body, parent, files })
       setDraftsByAssignment(prev => ({ ...prev, [assignmentId]: '' }))
     } catch (err) {
       setPostError(err.message || 'Unable to post assignment response.')
@@ -117,16 +203,15 @@ export default function MyCourses() {
                       ) : threadPosts.length === 0 ? (
                         <p className="muted">No responses yet. Be the first to post your assignment.</p>
                       ) : (
-                        <ul>
+                        <div>
                           {threadPosts.map((post) => (
-                            <li key={post.id}>
-                              <div>{post.body}</div>
-                              <small className="muted">
-                                {post.created_at ? new Date(post.created_at).toLocaleString() : 'Just now'}
-                              </small>
-                            </li>
+                            <DiscussionPost 
+                              key={post.id} 
+                              post={post} 
+                              onReply={handlePost} 
+                            />
                           ))}
-                        </ul>
+                        </div>
                       )}
                     </div>
 
@@ -139,8 +224,23 @@ export default function MyCourses() {
                         onChange={(event) => handleDraftChange(assignment.id, event.target.value)}
                         placeholder="Share your draft, reflection, or question for this assignment prompt."
                       />
+                      <input
+                        type="file"
+                        multiple
+                        id={`files-${assignment.id}`}
+                        style={{ marginTop: 8 }}
+                      />
                       <div className="actions" style={{ marginTop: 8 }}>
-                        <button type="button" className="btn" onClick={() => handlePost(assignment.id)}>
+                        <button 
+                          type="button" 
+                          className="btn" 
+                          onClick={() => {
+                            const body = draftsByAssignment[assignment.id] || ''
+                            const fileInput = document.getElementById(`files-${assignment.id}`)
+                            const files = fileInput ? Array.from(fileInput.files) : []
+                            handlePost(assignment.id, null, body, files)
+                          }}
+                        >
                           Post to discussion
                         </button>
                       </div>

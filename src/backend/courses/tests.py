@@ -164,7 +164,7 @@ class AssignmentDiscussionPostAPITests(APITestCase):
     response = self.client.post(self.discussion_url, {
       'assignment': self.assignment.id,
       'body': 'Here is my assignment response for discussion.',
-    }, format='json')
+    })
 
     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
     self.assertTrue(
@@ -181,7 +181,7 @@ class AssignmentDiscussionPostAPITests(APITestCase):
     response = self.client.post(self.discussion_url, {
       'assignment': self.assignment.id,
       'body': 'I should not be allowed to post here.',
-    }, format='json')
+    })
 
     self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -198,3 +198,50 @@ class AssignmentDiscussionPostAPITests(APITestCase):
     self.assertEqual(response.status_code, status.HTTP_200_OK)
     self.assertEqual(len(response.data), 1)
     self.assertEqual(response.data[0]['body'], 'Discussion starter')
+
+  def test_student_can_create_reply_to_discussion_post(self):
+    parent_post = AssignmentDiscussionPost.objects.create(
+      assignment=self.assignment,
+      author=self.student,
+      body='Original post',
+    )
+    self.authenticate(self.student)
+
+    response = self.client.post(self.discussion_url, {
+      'assignment': self.assignment.id,
+      'parent': parent_post.id,
+      'body': 'This is a reply to the original post.',
+    })
+
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    self.assertTrue(
+      AssignmentDiscussionPost.objects.filter(
+        assignment=self.assignment,
+        author=self.student,
+        parent=parent_post,
+        body='This is a reply to the original post.',
+      ).exists()
+    )
+
+  def test_student_can_create_post_with_file_attachment(self):
+    self.authenticate(self.student)
+    
+    from io import BytesIO
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    
+    test_file = SimpleUploadedFile(
+        "test_document.pdf",
+        b"file content",
+        content_type="application/pdf"
+    )
+
+    response = self.client.post(self.discussion_url, {
+      'assignment': self.assignment.id,
+      'body': 'Post with attachment',
+      'attachments': test_file,
+    }, format='multipart')
+
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    post = AssignmentDiscussionPost.objects.get(assignment=self.assignment, author=self.student)
+    self.assertEqual(post.attachments.count(), 1)
+    self.assertEqual(post.attachments.first().original_name, 'test_document.pdf')

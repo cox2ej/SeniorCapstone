@@ -6,9 +6,10 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from accounts.models import User
-from .models import Assignment, AssignmentAttachment, AssignmentDiscussionPost, Course, CourseRubricTemplate, Enrollment
+from .models import Assignment, AssignmentAttachment, AssignmentDiscussionAttachment, AssignmentDiscussionPost, Course, CourseRubricTemplate, Enrollment
 from .serializers import (
   AssignmentAttachmentSerializer,
+  AssignmentDiscussionAttachmentSerializer,
   AssignmentDiscussionPostSerializer,
   AssignmentSerializer,
   CourseRubricTemplateSerializer,
@@ -60,10 +61,15 @@ class CourseViewSet(viewsets.ModelViewSet):
 
 
 class AssignmentDiscussionPostViewSet(viewsets.ModelViewSet):
-  queryset = AssignmentDiscussionPost.objects.select_related('assignment', 'assignment__course', 'author')
+  queryset = AssignmentDiscussionPost.objects.select_related('assignment', 'assignment__course', 'author', 'parent').prefetch_related('attachments')
   serializer_class = AssignmentDiscussionPostSerializer
   permission_classes = [permissions.IsAuthenticated]
   http_method_names = ['get', 'post']
+
+  def get_parser_classes(self):
+    if self.action == 'create':
+      return [MultiPartParser, FormParser]
+    return []
 
   def get_queryset(self):
     qs = super().get_queryset()
@@ -93,7 +99,12 @@ class AssignmentDiscussionPostViewSet(viewsets.ModelViewSet):
 
   def perform_create(self, serializer):
     assignment = serializer.validated_data['assignment']
+    parent = serializer.validated_data.get('parent')
     user = self.request.user
+
+    # Validate parent belongs to same assignment
+    if parent and parent.assignment != assignment:
+        raise PermissionDenied('Reply must be to a post in the same assignment.')
 
     can_post = bool(
       assignment.course.instructor_id == user.id
@@ -102,7 +113,17 @@ class AssignmentDiscussionPostViewSet(viewsets.ModelViewSet):
     )
     if not can_post:
       raise PermissionDenied('You do not have permission to post in this assignment discussion.')
-    serializer.save(author=user)
+    
+    post = serializer.save(author=user)
+    
+    # Handle file uploads
+    files = self.request.FILES.getlist('attachments')
+    for file_obj in files:
+        AssignmentDiscussionAttachment.objects.create(
+            post=post,
+            file=file_obj,
+            uploaded_by=user
+        )
 
 
 class EnrollmentViewSet(viewsets.ModelViewSet):

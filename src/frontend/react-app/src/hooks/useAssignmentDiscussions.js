@@ -70,15 +70,32 @@ export function useAssignmentDiscussions({ courseId } = {}) {
   }, [backendEnabled, courseId])
 
   const postsByAssignment = useMemo(() => {
-    return items.reduce((acc, post) => {
+    const itemsMap = items.reduce((acc, post) => {
+      acc[post.id] = { ...post, replies: [] }
+      return acc
+    }, {})
+    
+    // Build the tree structure
+    items.forEach(post => {
+      if (post.parent && itemsMap[post.parent]) {
+        itemsMap[post.parent].replies.push(itemsMap[post.id])
+      }
+    })
+    
+    // Group by assignment, only including root posts
+    const rootPosts = Object.values(itemsMap).filter(post => !post.parent)
+    
+    const threaded = rootPosts.reduce((acc, post) => {
       const key = String(post.assignment)
       if (!acc[key]) acc[key] = []
       acc[key].push(post)
       return acc
     }, {})
+    
+    return threaded
   }, [items])
 
-  const createPost = useCallback(async ({ assignmentId, body }) => {
+  const createPost = useCallback(async ({ assignmentId, body, parent = null, files = [] }) => {
     const trimmedBody = (body || '').trim()
     if (!assignmentId) throw new Error('Assignment is required')
     if (!trimmedBody) throw new Error('Post content is required')
@@ -87,16 +104,27 @@ export function useAssignmentDiscussions({ courseId } = {}) {
       const localPost = {
         id: `local-${Date.now()}`,
         assignment: assignmentId,
+        parent,
         body: trimmedBody,
         created_at: new Date().toISOString(),
+        attachments: files.map((file, index) => ({
+          id: `local-attach-${index}`,
+          original_name: file.name,
+          file: URL.createObjectURL(file)
+        }))
       }
       setItems(prev => [...prev, localPost])
       return localPost
     }
 
-    const created = await apiPost('/assignment-discussion-posts/', {
-      assignment: assignmentId,
-      body: trimmedBody,
+    const formData = new FormData()
+    formData.append('assignment', assignmentId)
+    formData.append('body', trimmedBody)
+    if (parent) formData.append('parent', parent)
+    files.forEach(file => formData.append('attachments', file))
+
+    const created = await apiPost('/assignment-discussion-posts/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
     setItems(prev => [...prev, created])
     return created
