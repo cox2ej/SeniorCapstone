@@ -68,6 +68,22 @@ class AssignmentPrivacyAPITests(APITestCase):
     self.assertEqual(response.data['assignment'], self.self_assignment.id)
     self.assertEqual(response.data['rubric']['criteria'][0]['id'], 'clarity')
 
+  def test_classmate_can_view_rubric_for_peer_assignment(self):
+    self.authenticate(self.student)
+    self.peer_assignment.rubric = {
+      'criteria': [
+        {'id': 'depth', 'label': 'Depth of analysis', 'required': True, 'min_score': 1, 'max_score': 5},
+      ]
+    }
+    self.peer_assignment.save(update_fields=['rubric'])
+
+    rubric_url = reverse('assignment-rubric', args=[self.peer_assignment.id])
+    response = self.client.get(rubric_url)
+
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+    self.assertEqual(response.data['assignment'], self.peer_assignment.id)
+    self.assertEqual(response.data['rubric']['criteria'][0]['id'], 'depth')
+
   def test_unenrolled_author_can_view_rubric_for_own_assignment(self):
     self.authenticate(self.unenrolled_author)
     self.unenrolled_assignment.rubric = {'criteria': [{'id': 'depth', 'label': 'Depth', 'required': False, 'min_score': 1, 'max_score': 5}]}

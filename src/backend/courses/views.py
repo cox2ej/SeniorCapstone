@@ -241,7 +241,12 @@ class AssignmentViewSet(viewsets.ModelViewSet):
       or getattr(user, 'role', None) == 'admin'
     )
     if not can_view_all:
-      qs = qs.filter(Q(course__enrollments__user=user) | Q(created_by=user))
+      qs = qs.filter(
+        Q(is_public=True)
+        | Q(course__enrollments__user=user)
+        | Q(created_by=user)
+        | Q(reviewers__user=user)
+      )
       if self.action == 'list':
         qs = qs.exclude(created_by=user)
       qs = qs.distinct()
