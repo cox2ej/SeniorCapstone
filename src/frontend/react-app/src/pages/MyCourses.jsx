@@ -4,14 +4,23 @@ import { Link as RouterLink, useSearchParams } from 'react-router-dom'
 import { useCoursesData } from '../hooks/useCoursesData.js'
 import { useAssignmentsData } from '../hooks/useAssignmentsData.js'
 import { useAssignmentDiscussions } from '../hooks/useAssignmentDiscussions.js'
+import { ATTACHMENT_SIZE_HELP_TEXT, validateAttachmentSizes } from '../constants/uploads.js'
 
 function DiscussionPost({ post, onReply, depth = 0 }) {
   const [replyBody, setReplyBody] = useState('')
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [files, setFiles] = useState([])
+  const [attachmentError, setAttachmentError] = useState('')
 
   const handleReply = async () => {
     if (!replyBody.trim()) return
+    try {
+      validateAttachmentSizes(files)
+      setAttachmentError('')
+    } catch (err) {
+      setAttachmentError(err.message || ATTACHMENT_SIZE_HELP_TEXT)
+      return
+    }
     await onReply(post.assignment, post.id, replyBody, files)
     setReplyBody('')
     setFiles([])
@@ -19,7 +28,20 @@ function DiscussionPost({ post, onReply, depth = 0 }) {
   }
 
   const handleFileChange = (e) => {
-    setFiles(Array.from(e.target.files))
+    const nextFiles = Array.from(e.target.files || [])
+    if (!nextFiles.length) {
+      setFiles([])
+      setAttachmentError('')
+      return
+    }
+    try {
+      validateAttachmentSizes(nextFiles)
+      setFiles(nextFiles)
+      setAttachmentError('')
+    } catch (err) {
+      setAttachmentError(err.message || ATTACHMENT_SIZE_HELP_TEXT)
+      if (e.target) e.target.value = ''
+    }
   }
 
   return (
@@ -69,8 +91,16 @@ function DiscussionPost({ post, onReply, depth = 0 }) {
             onChange={handleFileChange}
             style={{ marginBottom: 8 }}
           />
+          <small className="muted">{ATTACHMENT_SIZE_HELP_TEXT}</small>
+          {attachmentError && (
+            <p className="error-text" role="alert">{attachmentError}</p>
+          )}
           <div className="actions">
-            <button type="button" className="btn" onClick={handleReply}>
+            <button 
+              type="button" 
+              className="btn" 
+              onClick={handleReply}
+            >
               Post Reply
             </button>
             <button type="button" className="btn link" onClick={() => setShowReplyForm(false)}>
@@ -104,6 +134,7 @@ export default function MyCourses() {
     createPost,
   } = useAssignmentDiscussions({ courseId: selectedCourseId })
   const [draftsByAssignment, setDraftsByAssignment] = useState({})
+  const [attachmentsErrorByAssignment, setAttachmentsErrorByAssignment] = useState({})
   const [postError, setPostError] = useState('')
 
   const courseAssignments = useMemo(() => {
@@ -132,6 +163,19 @@ export default function MyCourses() {
       setDraftsByAssignment(prev => ({ ...prev, [assignmentId]: '' }))
     } catch (err) {
       setPostError(err.message || 'Unable to post assignment response.')
+    }
+  }
+
+  const handleAssignmentReplySubmit = (assignmentId, fileInputId) => {
+    const body = draftsByAssignment[assignmentId] || ''
+    const fileInput = document.getElementById(fileInputId)
+    const files = fileInput ? Array.from(fileInput.files || []) : []
+    try {
+      validateAttachmentSizes(files)
+      setAttachmentsErrorByAssignment(prev => ({ ...prev, [assignmentId]: '' }))
+      handlePost(assignmentId, null, body, files)
+    } catch (err) {
+      setAttachmentsErrorByAssignment(prev => ({ ...prev, [assignmentId]: err.message || ATTACHMENT_SIZE_HELP_TEXT }))
     }
   }
 
@@ -229,17 +273,17 @@ export default function MyCourses() {
                         multiple
                         id={`files-${assignment.id}`}
                         style={{ marginTop: 8 }}
+                        aria-describedby={`files-help-${assignment.id}`}
                       />
+                      <small id={`files-help-${assignment.id}`} className="muted">{ATTACHMENT_SIZE_HELP_TEXT}</small>
+                      {attachmentsErrorByAssignment[assignment.id] && (
+                        <p className="error-text" role="alert">{attachmentsErrorByAssignment[assignment.id]}</p>
+                      )}
                       <div className="actions" style={{ marginTop: 8 }}>
                         <button 
                           type="button" 
                           className="btn" 
-                          onClick={() => {
-                            const body = draftsByAssignment[assignment.id] || ''
-                            const fileInput = document.getElementById(`files-${assignment.id}`)
-                            const files = fileInput ? Array.from(fileInput.files) : []
-                            handlePost(assignment.id, null, body, files)
-                          }}
+                          onClick={() => handleAssignmentReplySubmit(assignment.id, `files-${assignment.id}`)}
                         >
                           Post to discussion
                         </button>

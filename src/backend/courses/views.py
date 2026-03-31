@@ -1,8 +1,9 @@
+from django.conf import settings
 from django.db.models import Q
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from accounts.models import User
@@ -17,6 +18,13 @@ from .serializers import (
   EnrollmentSerializer,
 )
 from notifications.services import notify_assignment_posted, notify_course_invited
+
+
+def _validate_attachment_size(file_obj, field='file'):
+  limit = getattr(settings, 'MAX_ATTACHMENT_SIZE_BYTES', 10 * 1024 * 1024)
+  if file_obj.size > limit:
+    max_mb = getattr(settings, 'MAX_ATTACHMENT_SIZE_MB', round(limit / (1024 * 1024)))
+    raise ValidationError({field: f'Attachment exceeds the {max_mb} MB limit.'})
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -101,6 +109,9 @@ class AssignmentDiscussionPostViewSet(viewsets.ModelViewSet):
     assignment = serializer.validated_data['assignment']
     parent = serializer.validated_data.get('parent')
     user = self.request.user
+    files = self.request.FILES.getlist('attachments')
+    for file_obj in files:
+      _validate_attachment_size(file_obj, field='attachments')
 
     # Validate parent belongs to same assignment
     if parent and parent.assignment != assignment:
@@ -115,9 +126,8 @@ class AssignmentDiscussionPostViewSet(viewsets.ModelViewSet):
       raise PermissionDenied('You do not have permission to post in this assignment discussion.')
     
     post = serializer.save(author=user)
-    
+
     # Handle file uploads
-    files = self.request.FILES.getlist('attachments')
     for file_obj in files:
         AssignmentDiscussionAttachment.objects.create(
             post=post,
@@ -301,6 +311,8 @@ class AssignmentAttachmentViewSet(viewsets.ModelViewSet):
     user = self.request.user
     if assignment.created_by_id != user.id:
       raise PermissionDenied('Only the assignment author can upload attachments.')
+    file_obj = serializer.validated_data['file']
+    _validate_attachment_size(file_obj)
     serializer.save(uploaded_by=user)
 
   def perform_destroy(self, instance):

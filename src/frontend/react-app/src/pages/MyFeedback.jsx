@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMockStore } from '../store/mockStore.js'
 import { useAssignmentsData } from '../hooks/useAssignmentsData.js'
+import { ATTACHMENT_SIZE_HELP_TEXT, validateAttachmentSizes } from '../constants/uploads.js'
 
 export default function MyFeedback() {
   const { currentUser, getReviewsReceivedBy, getAssignmentById } = useMockStore()
@@ -11,8 +12,10 @@ export default function MyFeedback() {
   const [attachmentFiles, setAttachmentFiles] = useState([])
   const [statusMessage, setStatusMessage] = useState('')
   const [submitError, setSubmitError] = useState('')
+  const [attachmentError, setAttachmentError] = useState('')
   const [rubricCriteria, setRubricCriteria] = useState([])
   const fileInputRef = useRef(null)
+  const errorSummaryRef = useRef(null)
   const reviews = getReviewsReceivedBy(currentUser)
 
   const assignmentLookup = useMemo(() => {
@@ -29,7 +32,13 @@ export default function MyFeedback() {
     setStatusMessage('')
     const trimmed = title.trim()
     if (!trimmed) return
+    if (attachmentError) {
+      setSubmitError(attachmentError)
+      setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
+      return
+    }
     try {
+      validateAttachmentSizes(attachmentFiles)
       const rubricPayload = rubricCriteria.length
         ? {
             criteria: rubricCriteria.map((c) => ({
@@ -53,6 +62,7 @@ export default function MyFeedback() {
       setTitle('')
       setDesc('')
       setAttachmentFiles([])
+      setAttachmentError('')
       setRubricCriteria([])
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
@@ -60,12 +70,26 @@ export default function MyFeedback() {
       setStatusMessage(backendEnabled ? 'Assignment submitted to backend.' : 'Assignment saved locally.')
     } catch (err) {
       setSubmitError(err.message || 'Unable to save assignment.')
+      setTimeout(() => errorSummaryRef.current && errorSummaryRef.current.focus(), 0)
     }
   }
 
   const handleAttachmentChange = (event) => {
     const files = Array.from(event.target.files || [])
-    setAttachmentFiles(files)
+    if (!files.length) {
+      setAttachmentFiles([])
+      setAttachmentError('')
+      return
+    }
+    try {
+      validateAttachmentSizes(files)
+      setAttachmentFiles(files)
+      setAttachmentError('')
+    } catch (err) {
+      setAttachmentFiles([])
+      setAttachmentError(err.message)
+      if (event.target) event.target.value = ''
+    }
   }
 
   const handleAddCriterion = () => {
@@ -132,8 +156,13 @@ export default function MyFeedback() {
               aria-describedby="mf-assn-files-help"
             />
             <small id="mf-assn-files-help" className="muted">
-              {backendEnabled ? 'Upload reference files to share with assigned reviewers (PDF, DOCX, ZIP, etc.).' : 'Enable backend mode to attach files.'}
+              {backendEnabled
+                ? `Upload reference files to share with assigned reviewers (PDF, DOCX, ZIP, etc.). ${ATTACHMENT_SIZE_HELP_TEXT}`
+                : 'Enable backend mode to attach files.'}
             </small>
+            {attachmentError && (
+              <p className="error-text" role="alert">{attachmentError}</p>
+            )}
             {attachmentFiles.length > 0 && (
               <ul className="attachment-preview" style={{ marginTop: 8 }}>
                 {attachmentFiles.map((file) => (
