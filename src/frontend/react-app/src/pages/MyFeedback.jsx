@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMockStore } from '../store/mockStore.js'
 import { useAssignmentsData } from '../hooks/useAssignmentsData.js'
@@ -16,7 +16,14 @@ export default function MyFeedback() {
   const [rubricCriteria, setRubricCriteria] = useState([])
   const fileInputRef = useRef(null)
   const errorSummaryRef = useRef(null)
+  const attachmentErrorRef = useRef(null)
   const reviews = getReviewsReceivedBy(currentUser)
+
+  useEffect(() => {
+    if (attachmentError && attachmentErrorRef.current) {
+      attachmentErrorRef.current.focus()
+    }
+  }, [attachmentError])
 
   const assignmentLookup = useMemo(() => {
     if (!backendEnabled) return null
@@ -75,21 +82,33 @@ export default function MyFeedback() {
   }
 
   const handleAttachmentChange = (event) => {
-    const files = Array.from(event.target.files || [])
-    if (!files.length) {
-      setAttachmentFiles([])
-      setAttachmentError('')
-      return
+    const incoming = Array.from(event.target.files || [])
+    if (event.target) {
+      event.target.value = ''
     }
-    try {
-      validateAttachmentSizes(files)
-      setAttachmentFiles(files)
-      setAttachmentError('')
-    } catch (err) {
-      setAttachmentFiles([])
-      setAttachmentError(err.message)
-      if (event.target) event.target.value = ''
-    }
+    if (!incoming.length) return
+
+    setAttachmentFiles((prev) => {
+      const next = [...prev, ...incoming]
+      try {
+        validateAttachmentSizes(next)
+        setAttachmentError('')
+        return next
+      } catch (err) {
+        setAttachmentError(err.message)
+        return prev
+      }
+    })
+  }
+
+  const handleRemoveAttachment = (indexToRemove) => {
+    setAttachmentFiles((prev) => {
+      const next = prev.filter((_, index) => index !== indexToRemove)
+      if (!next.length) {
+        setAttachmentError('')
+      }
+      return next
+    })
   }
 
   const handleAddCriterion = () => {
@@ -161,12 +180,37 @@ export default function MyFeedback() {
                 : 'Enable backend mode to attach files.'}
             </small>
             {attachmentError && (
-              <p className="error-text" role="alert">{attachmentError}</p>
+              <p
+                className="error-text"
+                role="alert"
+                ref={attachmentErrorRef}
+                tabIndex={-1}
+                aria-live="assertive"
+                style={{
+                  backgroundColor: '#ffeceb',
+                  border: '1px solid #f05b5b',
+                  borderRadius: 6,
+                  padding: '8px 12px',
+                  marginTop: 8,
+                }}
+              >
+                {attachmentError}
+              </p>
             )}
             {attachmentFiles.length > 0 && (
               <ul className="attachment-preview" style={{ marginTop: 8 }}>
-                {attachmentFiles.map((file) => (
-                  <li key={file.name}>{file.name}</li>
+                {attachmentFiles.map((file, index) => (
+                  <li key={`${file.name}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <span>{file.name}</span>
+                    <button
+                      type="button"
+                      className="btn link"
+                      onClick={() => handleRemoveAttachment(index)}
+                      aria-label={`Remove attachment ${file.name}`}
+                    >
+                      Remove
+                    </button>
+                  </li>
                 ))}
               </ul>
             )}
