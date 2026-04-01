@@ -173,11 +173,12 @@ class AssignmentDiscussionPostSerializer(serializers.ModelSerializer):
   author = serializers.SerializerMethodField()
   parent = serializers.PrimaryKeyRelatedField(queryset=AssignmentDiscussionPost.objects.all(), required=False, allow_null=True)
   attachments = serializers.SerializerMethodField()
+  permissions = serializers.SerializerMethodField()
 
   class Meta:
     model = AssignmentDiscussionPost
-    fields = ['id', 'assignment', 'parent', 'author', 'body', 'created_at', 'updated_at', 'attachments']
-    read_only_fields = ['id', 'author', 'created_at', 'updated_at', 'attachments']
+    fields = ['id', 'assignment', 'parent', 'author', 'body', 'created_at', 'updated_at', 'attachments', 'permissions']
+    read_only_fields = ['id', 'author', 'created_at', 'updated_at', 'attachments', 'permissions']
 
   def _can_view_user_identity(self):
     request = self.context.get('request')
@@ -202,6 +203,23 @@ class AssignmentDiscussionPostSerializer(serializers.ModelSerializer):
     attachments = obj.attachments.all()
     serializer = AssignmentDiscussionAttachmentSerializer(attachments, many=True, context={'request': request})
     return serializer.data
+
+  def get_permissions(self, obj):
+    request = self.context.get('request')
+    user = getattr(request, 'user', None)
+    if user is None or not user.is_authenticated:
+      return {'can_edit': False, 'can_delete': False}
+
+    is_admin = bool(getattr(user, 'is_staff', False) or getattr(user, 'role', None) == 'admin')
+    is_instructor = bool(getattr(user, 'is_instructor', False) and obj.assignment.course.instructor_id == user.id)
+    is_author = obj.author_id == user.id if obj.author_id else False
+
+    can_edit = bool(is_admin or is_instructor or is_author)
+    can_delete = can_edit
+    return {
+      'can_edit': can_edit,
+      'can_delete': can_delete,
+    }
 
 
 class AssignmentDiscussionAttachmentSerializer(serializers.ModelSerializer):

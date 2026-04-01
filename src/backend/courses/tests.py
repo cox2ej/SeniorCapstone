@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from accounts.models import User
-from .models import Assignment, AssignmentDiscussionPost, Course, Enrollment
+from .models import Assignment, AssignmentAttachment, AssignmentDiscussionPost, Course, Enrollment
 
 
 class AssignmentPrivacyAPITests(APITestCase):
@@ -261,3 +261,119 @@ class AssignmentDiscussionPostAPITests(APITestCase):
     post = AssignmentDiscussionPost.objects.get(assignment=self.assignment, author=self.student)
     self.assertEqual(post.attachments.count(), 1)
     self.assertEqual(post.attachments.first().original_name, 'test_document.pdf')
+
+  def test_discussion_attachment_rejects_large_file(self):
+    self.authenticate(self.student)
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    test_file = SimpleUploadedFile(
+        "huge.bin",
+        b"0" * (11 * 1024 * 1024),
+        content_type="application/octet-stream"
+    )
+
+    response = self.client.post(self.discussion_url, {
+      'assignment': self.assignment.id,
+      'body': 'Post with oversized attachment',
+      'attachments': test_file,
+    }, format='multipart')
+
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    self.assertIn('attachments', response.data)
+
+  def test_author_can_edit_discussion_post_remove_and_add_attachments(self):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    post = AssignmentDiscussionPost.objects.create(
+      assignment=self.assignment,
+      author=self.student,
+      body='Original body',
+    )
+    existing = AssignmentDiscussionAttachment.objects.create(
+      post=post,
+      file=SimpleUploadedFile('orig.txt', b'orig'),
+      uploaded_by=self.student,
+    )
+    self.authenticate(self.student)
+
+    new_file = SimpleUploadedFile('new.txt', b'content')
+    url = reverse('assignment-discussion-post-detail', args=[post.id])
+    response = self.client.patch(url, {
+      'body': 'Updated body',
+      'attachments_to_remove': [existing.id],
+      'attachments': new_file,
+    }, format='multipart')
+
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+    post.refresh_from_db()
+    self.assertEqual(post.body, 'Updated body')
+    self.assertEqual(post.attachments.count(), 1)
+    self.assertEqual(post.attachments.first().original_name, 'new.txt')
+
+  def test_author_can_delete_discussion_post(self):
+    post = AssignmentDiscussionPost.objects.create(
+      assignment=self.assignment,
+      author=self.student,
+      body='To delete',
+    )
+    self.authenticate(self.student)
+
+    url = reverse('assignment-discussion-post-detail', args=[post.id])
+    response = self.client.delete(url)
+
+    self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+    self.assertFalse(AssignmentDiscussionPost.objects.filter(id=post.id).exists())
+
+
+class AssignmentAttachmentAPITests(APITestCase):
+
+  def setUp(self):
+    self.instructor = User.objects.create_user(username='inst_attach', password='pass', role=User.Roles.INSTRUCTOR)
+    self.student = User.objects.create_user(username='student_attach', password='pass', role=User.Roles.STUDENT)
+    self.course = Course.objects.create(code='ENG340', title='Attachment Test', instructor=self.instructor)
+    Enrollment.objects.create(course=self.course, user=self.student)
+    self.assignment = Assignment.objects.create(course=self.course, created_by=self.student, title='Attachment Test')
+    self.attachment_url = reverse('assignment-attachment-list')
+
+  def authenticate(self, user):
+    self.client.force_authenticate(user=user)
+
+  def test_author_can_upload_attachment(self):
+    self.authenticate(self.student)
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    test_file = SimpleUploadedFile(
+        "draft.docx",
+        b"file content",
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+    response = self.client.post(self.attachment_url, {
+      'assignment': self.assignment.id,
+      'file': test_file,
+    }, format='multipart')
+
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    self.assertEqual(AssignmentAttachment.objects.count(), 1)
+    self.assertEqual(AssignmentAttachment.objects.first().original_name, 'draft.docx')
+
+  def test_author_cannot_upload_attachment_over_limit(self):
+    self.authenticate(self.student)
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    big_file = SimpleUploadedFile(
+      'too-big.pdf',
+      b"1" * (11 * 1024 * 1024),
+      content_type='application/pdf'
+    )
+
+    response = self.client.post(self.attachment_url, {
+      'assignment': self.assignment.id,
+      'file': big_file,
+    }, format='multipart')
+
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    self.assertIn('file', response.data)
