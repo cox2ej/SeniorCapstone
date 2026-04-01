@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link as RouterLink, useSearchParams } from 'react-router-dom'
 
 import { useCoursesData } from '../hooks/useCoursesData.js'
@@ -6,11 +6,20 @@ import { useAssignmentsData } from '../hooks/useAssignmentsData.js'
 import { useAssignmentDiscussions } from '../hooks/useAssignmentDiscussions.js'
 import { ATTACHMENT_SIZE_HELP_TEXT, validateAttachmentSizes } from '../constants/uploads.js'
 
-function DiscussionPost({ post, onReply, depth = 0 }) {
+function DiscussionPost({ post, onReply, onEdit, onDelete, depth = 0 }) {
   const [replyBody, setReplyBody] = useState('')
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [files, setFiles] = useState([])
   const [attachmentError, setAttachmentError] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
+  const [editBody, setEditBody] = useState(post.body)
+  const [editFiles, setEditFiles] = useState([])
+  const [editAttachmentError, setEditAttachmentError] = useState('')
+  const [attachmentsMarkedForRemoval, setAttachmentsMarkedForRemoval] = useState([])
+
+  useEffect(() => {
+    setEditBody(post.body)
+  }, [post.body])
 
   const handleReply = async () => {
     if (!replyBody.trim()) return
@@ -44,13 +53,149 @@ function DiscussionPost({ post, onReply, depth = 0 }) {
     }
   }
 
+  const handleEditSave = async () => {
+    if (!editBody.trim()) {
+      setEditAttachmentError('Post content is required.')
+      return
+    }
+    try {
+      validateAttachmentSizes(editFiles)
+      setEditAttachmentError('')
+    } catch (err) {
+      setEditAttachmentError(err.message || ATTACHMENT_SIZE_HELP_TEXT)
+      return
+    }
+    await onEdit({
+      postId: post.id,
+      body: editBody,
+      attachmentsToRemove: attachmentsMarkedForRemoval,
+      newFiles: editFiles,
+    })
+    setEditFiles([])
+    setAttachmentsMarkedForRemoval([])
+    setIsEditing(false)
+  }
+
+  const handleEditFileChange = (event) => {
+    const incoming = Array.from(event.target.files || [])
+    if (event.target) event.target.value = ''
+    if (!incoming.length) return
+    const next = [...editFiles, ...incoming]
+    try {
+      validateAttachmentSizes(next)
+      setEditFiles(next)
+      setEditAttachmentError('')
+    } catch (err) {
+      setEditAttachmentError(err.message || ATTACHMENT_SIZE_HELP_TEXT)
+    }
+  }
+
+  const toggleAttachmentRemoval = (attachmentId) => {
+    setAttachmentsMarkedForRemoval((prev) => {
+      if (prev.includes(attachmentId)) {
+        return prev.filter((id) => id !== attachmentId)
+      }
+      return [...prev, attachmentId]
+    })
+  }
+
+  const removeQueuedEditFile = (indexToRemove) => {
+    setEditFiles((prev) => prev.filter((_, index) => index !== indexToRemove))
+  }
+
+  const handleDelete = () => {
+    if (!window.confirm('Delete this post and any replies?')) return
+    onDelete(post.id)
+  }
+
   return (
     <div style={{ marginLeft: depth * 20, marginTop: 12, padding: 12, border: '1px solid #ddd', borderRadius: 4 }}>
-      <div>{post.body}</div>
-      <small className="muted">
-        {post.created_at ? new Date(post.created_at).toLocaleString() : 'Just now'}
-      </small>
-      
+      {isEditing ? (
+        <>
+          <textarea
+            rows={3}
+            value={editBody}
+            onChange={(e) => setEditBody(e.target.value)}
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <div>
+            <strong>Existing attachments</strong>
+            {post.attachments?.length ? (
+              <>
+                <p className="muted" style={{ marginTop: 4 }}>Use remove/undo to control what gets deleted when you save.</p>
+                <ul style={{ marginTop: 4 }}>
+                  {post.attachments.map((attachment) => {
+                    const marked = attachmentsMarkedForRemoval.includes(attachment.id)
+                    return (
+                      <li key={attachment.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                        <span style={{ textDecoration: marked ? 'line-through' : 'none' }}>
+                          {attachment.original_name}
+                          {marked && (
+                            <span className="muted" style={{ marginLeft: 6 }}>(will be removed)</span>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          className={`btn link ${marked ? '' : 'danger'}`}
+                          aria-pressed={marked}
+                          onClick={() => toggleAttachmentRemoval(attachment.id)}
+                        >
+                          {marked ? 'Undo remove' : 'Remove'}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </>
+            ) : (
+              <p className="muted">No attachments yet.</p>
+            )}
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <label>Add more files (optional)</label>
+            <input type="file" multiple onChange={handleEditFileChange} />
+            <small className="muted">{ATTACHMENT_SIZE_HELP_TEXT}</small>
+            {editAttachmentError && (
+              <p className="error-text" role="alert">{editAttachmentError}</p>
+            )}
+            {editFiles.length > 0 && (
+              <ul className="attachment-preview" style={{ marginTop: 8 }}>
+                {editFiles.map((file, index) => (
+                  <li key={`${file.name}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <span>{file.name}</span>
+                    <button
+                      type="button"
+                      className="btn link"
+                      onClick={() => removeQueuedEditFile(index)}
+                      aria-label={`Remove pending attachment ${file.name}`}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="actions" style={{ marginTop: 8 }}>
+            <button type="button" className="btn" onClick={handleEditSave}>Save changes</button>
+            <button type="button" className="btn link" onClick={() => {
+              setIsEditing(false)
+              setEditBody(post.body)
+              setEditFiles([])
+              setAttachmentsMarkedForRemoval([])
+              setEditAttachmentError('')
+            }}>Cancel</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div>{post.body}</div>
+          <small className="muted">
+            {post.created_at ? new Date(post.created_at).toLocaleString() : 'Just now'}
+          </small>
+        </>
+      )}
+
       {post.attachments && post.attachments.length > 0 && (
         <div style={{ marginTop: 8 }}>
           <strong>Attachments:</strong>
@@ -66,7 +211,7 @@ function DiscussionPost({ post, onReply, depth = 0 }) {
         </div>
       )}
 
-      <div style={{ marginTop: 8 }}>
+      <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button 
           type="button" 
           className="btn link" 
@@ -74,6 +219,16 @@ function DiscussionPost({ post, onReply, depth = 0 }) {
         >
           Reply
         </button>
+        {post.permissions?.can_edit && !isEditing && (
+          <button type="button" className="btn link" onClick={() => setIsEditing(true)}>
+            Edit
+          </button>
+        )}
+        {post.permissions?.can_delete && (
+          <button type="button" className="btn link danger" onClick={handleDelete}>
+            Delete
+          </button>
+        )}
       </div>
 
       {showReplyForm && (
@@ -115,6 +270,8 @@ function DiscussionPost({ post, onReply, depth = 0 }) {
           key={reply.id} 
           post={reply} 
           onReply={onReply} 
+          onEdit={onEdit}
+          onDelete={onDelete}
           depth={depth + 1} 
         />
       ))}
@@ -132,6 +289,8 @@ export default function MyCourses() {
     loading: postsLoading,
     error: postsError,
     createPost,
+    updatePost,
+    deletePost,
   } = useAssignmentDiscussions({ courseId: selectedCourseId })
   const [draftsByAssignment, setDraftsByAssignment] = useState({})
   const [attachmentsErrorByAssignment, setAttachmentsErrorByAssignment] = useState({})
@@ -253,6 +412,8 @@ export default function MyCourses() {
                               key={post.id} 
                               post={post} 
                               onReply={handlePost} 
+                              onEdit={updatePost}
+                              onDelete={deletePost}
                             />
                           ))}
                         </div>

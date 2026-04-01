@@ -47,6 +47,31 @@ export function MockStoreProvider({ children }) {
     }))
   }
 
+  const updateAssignment = (assignmentId, updates = {}) => {
+    setStore((s) => ({
+      ...s,
+      assignments: s.assignments.map((assignment) => (
+        assignment.id === assignmentId
+          ? {
+              ...assignment,
+              ...updates,
+              updatedAt: new Date().toISOString(),
+              rubric: updates.rubric === null ? {} : updates.rubric ?? assignment.rubric,
+            }
+          : assignment
+      )),
+    }))
+  }
+
+  const deleteAssignment = (assignmentId) => {
+    setStore((s) => ({
+      ...s,
+      assignments: s.assignments.filter((assignment) => assignment.id !== assignmentId),
+      reviews: s.reviews.filter((review) => review.assignmentId !== assignmentId),
+      selfAssessments: s.selfAssessments.filter((sa) => sa.assignmentId !== assignmentId),
+    }))
+  }
+
   const addReview = ({ assignmentId, rating, comments, rubricScores }) => {
     const id = 'r_' + Math.random().toString(36).slice(2, 9)
     const createdAt = new Date().toISOString()
@@ -104,6 +129,8 @@ export function MockStoreProvider({ children }) {
     matches: store.matches,
     addAssignment,
     addAssignmentFor,
+    updateAssignment,
+    deleteAssignment,
     addReview,
     addSelfAssessment,
     setMatch,

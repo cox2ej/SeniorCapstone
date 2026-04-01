@@ -282,6 +282,49 @@ class AssignmentDiscussionPostAPITests(APITestCase):
     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     self.assertIn('attachments', response.data)
 
+  def test_author_can_edit_discussion_post_remove_and_add_attachments(self):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    post = AssignmentDiscussionPost.objects.create(
+      assignment=self.assignment,
+      author=self.student,
+      body='Original body',
+    )
+    existing = AssignmentDiscussionAttachment.objects.create(
+      post=post,
+      file=SimpleUploadedFile('orig.txt', b'orig'),
+      uploaded_by=self.student,
+    )
+    self.authenticate(self.student)
+
+    new_file = SimpleUploadedFile('new.txt', b'content')
+    url = reverse('assignment-discussion-post-detail', args=[post.id])
+    response = self.client.patch(url, {
+      'body': 'Updated body',
+      'attachments_to_remove': [existing.id],
+      'attachments': new_file,
+    }, format='multipart')
+
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+    post.refresh_from_db()
+    self.assertEqual(post.body, 'Updated body')
+    self.assertEqual(post.attachments.count(), 1)
+    self.assertEqual(post.attachments.first().original_name, 'new.txt')
+
+  def test_author_can_delete_discussion_post(self):
+    post = AssignmentDiscussionPost.objects.create(
+      assignment=self.assignment,
+      author=self.student,
+      body='To delete',
+    )
+    self.authenticate(self.student)
+
+    url = reverse('assignment-discussion-post-detail', args=[post.id])
+    response = self.client.delete(url)
+
+    self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+    self.assertFalse(AssignmentDiscussionPost.objects.filter(id=post.id).exists())
+
 
 class AssignmentAttachmentAPITests(APITestCase):
 

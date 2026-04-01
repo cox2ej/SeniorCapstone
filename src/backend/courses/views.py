@@ -1,5 +1,8 @@
+import json
+
 from django.conf import settings
 from django.db.models import Q
+from django.http import QueryDict
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -72,12 +75,26 @@ class AssignmentDiscussionPostViewSet(viewsets.ModelViewSet):
   queryset = AssignmentDiscussionPost.objects.select_related('assignment', 'assignment__course', 'author', 'parent').prefetch_related('attachments')
   serializer_class = AssignmentDiscussionPostSerializer
   permission_classes = [permissions.IsAuthenticated]
-  http_method_names = ['get', 'post']
+  http_method_names = ['get', 'post', 'patch', 'delete']
 
   def get_parser_classes(self):
-    if self.action == 'create':
+    if self.action in ['create', 'partial_update']:
       return [MultiPartParser, FormParser]
-    return []
+    return super().get_parser_classes()
+
+  def get_serializer(self, *args, **kwargs):
+    data = kwargs.get('data')
+    if data is not None:
+      if isinstance(data, QueryDict):
+        mutable = data.copy()
+        if 'attachments_to_remove' in mutable:
+          mutable.pop('attachments_to_remove', None)
+        kwargs['data'] = mutable
+      elif isinstance(data, dict) and 'attachments_to_remove' in data:
+        cleaned = data.copy()
+        cleaned.pop('attachments_to_remove', None)
+        kwargs['data'] = cleaned
+    return super().get_serializer(*args, **kwargs)
 
   def get_queryset(self):
     qs = super().get_queryset()
@@ -134,6 +151,81 @@ class AssignmentDiscussionPostViewSet(viewsets.ModelViewSet):
             file=file_obj,
             uploaded_by=user
         )
+
+  def _ensure_can_modify(self, post):
+    user = self.request.user
+    is_admin = bool(getattr(user, 'is_staff', False) or getattr(user, 'role', None) == 'admin')
+    is_instructor = bool(getattr(user, 'is_instructor', False) and post.assignment.course.instructor_id == user.id)
+    is_author = post.author_id == user.id if post.author_id else False
+    if not (is_admin or is_instructor or is_author):
+      raise PermissionDenied('You do not have permission to modify this post.')
+
+  def _parse_attachments_to_remove(self):
+    data = self.request.data
+    values = []
+    if hasattr(data, 'getlist'):
+      values = data.getlist('attachments_to_remove') or []
+      if not values:
+        single = data.get('attachments_to_remove')
+        if single is not None:
+          values = [single]
+    else:
+      raw = data.get('attachments_to_remove')
+      if raw is None:
+        return []
+      values = raw if isinstance(raw, list) else [raw]
+
+    normalized = []
+    for value in values:
+      if value in (None, ''):
+        continue
+      if isinstance(value, (list, tuple)):
+        normalized.extend(value)
+        continue
+      if isinstance(value, str):
+        try:
+          parsed = json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+          parsed = None
+        if isinstance(parsed, list):
+          normalized.extend(parsed)
+          continue
+        normalized.extend(part for part in value.split(',') if part)
+      else:
+        normalized.append(value)
+
+    result = []
+    for value in normalized:
+      try:
+        result.append(int(value))
+      except (TypeError, ValueError):
+        continue
+    return result
+
+  def perform_update(self, serializer):
+    post = serializer.instance
+    self._ensure_can_modify(post)
+    files = self.request.FILES.getlist('attachments')
+    for file_obj in files:
+      _validate_attachment_size(file_obj, field='attachments')
+
+    updated_post = serializer.save()
+
+    remove_ids = self._parse_attachments_to_remove()
+    if remove_ids:
+      AssignmentDiscussionAttachment.objects.filter(post=updated_post, id__in=remove_ids).delete()
+
+    user = self.request.user
+    for file_obj in files:
+      AssignmentDiscussionAttachment.objects.create(
+        post=updated_post,
+        file=file_obj,
+        uploaded_by=user
+      )
+
+  def perform_destroy(self, instance):
+    self._ensure_can_modify(instance)
+    instance.delete()
 
 
 class EnrollmentViewSet(viewsets.ModelViewSet):
@@ -269,6 +361,29 @@ class AssignmentViewSet(viewsets.ModelViewSet):
   def perform_create(self, serializer):
     assignment = serializer.save(created_by=self.request.user)
     notify_assignment_posted(assignment)
+
+  def _ensure_can_modify(self, assignment):
+    user = self.request.user
+    if not user or not user.is_authenticated:
+      raise PermissionDenied('You do not have permission to modify this assignment.')
+    is_admin = bool(getattr(user, 'is_staff', False) or getattr(user, 'role', None) == 'admin')
+    is_course_instructor = bool(
+      getattr(user, 'is_instructor', False)
+      and assignment.course
+      and assignment.course.instructor_id == user.id
+    )
+    is_owner = assignment.created_by_id == user.id if assignment.created_by_id else False
+    if not (is_admin or is_course_instructor or is_owner):
+      raise PermissionDenied('You do not have permission to modify this assignment.')
+
+  def perform_update(self, serializer):
+    assignment = serializer.instance
+    self._ensure_can_modify(assignment)
+    serializer.save()
+
+  def perform_destroy(self, instance):
+    self._ensure_can_modify(instance)
+    instance.delete()
 
   @action(detail=True, methods=['get'], url_path='rubric')
   def rubric(self, request, pk=None):
