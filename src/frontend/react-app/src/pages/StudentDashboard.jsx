@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useMemo, useState } from 'react'
-import { useMockStore } from '../store/mockStore.js'
+import { useMemo } from 'react'
 import { useDashboardSummary } from '../hooks/useDashboardSummary.js'
 import { useCoursesData } from '../hooks/useCoursesData.js'
 
@@ -10,11 +9,6 @@ const formatAverage = (value) => {
 }
 
 export default function StudentDashboard() {
-  const { currentUser, addAssignment, getAssignmentsByOwner, getAssignmentsForReview } = useMockStore()
-  const [title, setTitle] = useState('')
-  const [desc, setDesc] = useState('')
-  const myAssignments = getAssignmentsByOwner(currentUser)
-  const reviewQueue = getAssignmentsForReview(currentUser)
   const { summary, loading: summaryLoading, error: summaryError, refresh } = useDashboardSummary()
   const { courses, loading: coursesLoading, error: coursesError } = useCoursesData()
 
@@ -26,14 +20,6 @@ export default function StudentDashboard() {
     avgGiven: summary?.average_rating_given,
     avgReceived: summary?.average_rating_received,
   }), [summary])
-
-  function onPost(e) {
-    e.preventDefault()
-    if (!title.trim()) return
-    addAssignment({ title: title.trim(), description: desc.trim() })
-    setTitle('')
-    setDesc('')
-  }
 
   return (
     <>
@@ -113,56 +99,7 @@ export default function StudentDashboard() {
         </div>
       </section>
 
-      <section className="tile" aria-labelledby="post-assignment-title">
-        <h2 id="post-assignment-title" className="tile-title">Post a non-course assignment for review (demo)</h2>
-        <div className="tile-content">
-          <p className="muted">Course assignments from instructors are available under My Courses.</p>
-          <form onSubmit={onPost} noValidate>
-            <label htmlFor="assn-title">Title</label>
-            <input id="assn-title" name="assnTitle" value={title} onChange={(e) => setTitle(e.target.value)} required />
-            <label htmlFor="assn-desc">Description (optional)</label>
-            <textarea id="assn-desc" name="assnDesc" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} />
-            <div className="actions">
-              <button className="primary" type="submit">Post</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <section className="tile" aria-labelledby="your-assn-title">
-        <h2 id="your-assn-title" className="tile-title">Your non-course posted assignments</h2>
-        <div className="tile-content">
-          {myAssignments.length === 0 ? (
-            <p>No assignments posted yet.</p>
-          ) : (
-            <ul>
-              {myAssignments.map(a => (
-                <li key={a.id}><strong>{a.title}</strong></li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
-
-      <section className="tile" aria-labelledby="queue-title">
-        <h2 id="queue-title" className="tile-title">Non-course assignments to review</h2>
-        <div className="tile-content">
-          {reviewQueue.length === 0 ? (
-            <p>No assignments to review.</p>
-          ) : (
-            <ul>
-              {reviewQueue.map(a => (
-                <li key={a.id}>
-                  <strong>{a.title}</strong>
-                  <div className="actions" style={{ marginTop: 8 }}>
-                    <Link className="btn primary" to={`/give-feedback?assignmentId=${a.id}`}>Review</Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
+      {/* Demo-only tiles removed now that real My Feedback & Give Feedback flows exist */}
     </>
   )
 }

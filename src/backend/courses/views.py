@@ -344,14 +344,12 @@ class AssignmentViewSet(viewsets.ModelViewSet):
     )
     if not can_view_all:
       qs = qs.filter(
-        Q(is_public=True)
-        | Q(course__enrollments__user=user)
+        Q(course__enrollments__user=user)
         | Q(created_by=user)
         | Q(reviewers__user=user)
-      )
+      ).distinct()
       if self.action == 'list':
         qs = qs.exclude(created_by=user)
-      qs = qs.distinct()
 
     course_id = self.request.query_params.get('course')
     if course_id:
